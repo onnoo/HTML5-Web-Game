@@ -365,7 +365,7 @@ function ObjectPreset() {
     this.setSpriteFrame = function (imageSet, frame) {
         if ((this.sprite.image == null) || (this.sprite.height < (this.sprite.cellHeight * imageSet)) || (this.sprite.width < (this.sprite.cellWidth * frame)))
             return false
-        this.sprite.frame = imageSet;
+        this.sprite.imageSet = imageSet;
         this.sprite.frame = frame;
         return true
     }
@@ -599,6 +599,7 @@ function AudioManager() {
     };
 
     this.setAudioVolume = function (name, volume) {
+        volume = typeof volume !== 'undefined' ? volume : 1;
         if (name in audioList)
             audioList[name].volume = volume;
         else
@@ -1068,10 +1069,15 @@ function Game(canvas, targetFPS) {
         this.image_m.loadImage("background_stars", "/static/image/background_stars.png");
         this.image_m.loadImage("curser", "/static/image/curser.png");
         this.image_m.loadImage("laser_bullet", "/static/image/laser_bullet.png");
+        this.image_m.loadImage("explosion", "/static/image/explosion.png");
+        this.image_m.loadImage("crosshair", "/static/image/crosshair.png");
+
         this.audio_m.loadAudio("laser", "/static/sound/laser1.wav");
         this.audio_m.setAudioVolume("laser", 0.3);
         this.audio_m.loadAudio("hit", "/static/sound/laser2.mp3");
         this.audio_m.setAudioVolume("hit", 0.3);
+        this.audio_m.loadAudio("boom", "/static/sound/boom.wav");
+        this.audio_m.setAudioVolume("boom");
     }
     this.loadAssets();
 
@@ -1430,8 +1436,15 @@ function Ship() {
     this.takeDamage = function (damage) {
         hp -= damage;
         if (hp <= 0) {
-            this.destroySelf();
+            var o = newObject(ExplosionEffect);
+            this.manager.addObject(o);
+            o.setPos(this.x, this.y);
+
+
+            this.gameObject.audio_m.addPlayQueue("boom");
+
             gun.destroySelf();
+            this.destroySelf();
         }
     }
 }
@@ -1501,7 +1514,8 @@ function Curser() {
     this.init = function () {
         input_m = this.gameObject.input_m;
         view = this.manager.room.view;
-        image = this.gameObject.image_m.getImage("curser");
+        //image = this.gameObject.image_m.getImage("curser");
+        image = this.gameObject.image_m.getImage("crosshair");
     };
 
     this.update = function () {
@@ -1520,7 +1534,7 @@ function Curser() {
     };
 
     this.draw = function (context) {
-        context.drawImage(image, input_m.viewMousePos.x, input_m.viewMousePos.y);
+        context.drawImage(image, input_m.viewMousePos.x - 32, input_m.viewMousePos.y - 32);
     };
 }
 
@@ -1605,6 +1619,38 @@ function HitEffect() {
     };
 }
 
+function ExplosionEffect() {
+    this.depth = 15;
+    this.scale = 1.5;
+    var view;
+    var frameSpeed = 60;
+    var animFrame = 0;
+    var animMaxFrame = 64;
+
+    this.init = function () {
+        view = this.manager.room.view;
+
+        var image = this.gameObject.image_m.getImage("explosion");
+        this.setSprite(image, 0, 0, image.width, image.height, 256, 256, 128, 128);
+        this.setSpriteFrame(0, 0);
+    }
+
+    this.update = function () {
+        var tickTimeMul = (this.gameObject.nowLoopTime - this.gameObject.lastTickTime) / 1000;
+        animFrame += frameSpeed * tickTimeMul;
+        var intAnimFrame = Math.floor(animFrame);
+        if (animMaxFrame <= intAnimFrame)
+            this.destroySelf();
+        else {
+            this.setSpriteFrame(Math.floor(intAnimFrame / 8), intAnimFrame % 8);
+        }
+    };
+
+    this.draw = function (context) {
+        this.drawSprite(context);
+    };
+}
+
 function Bullet() {
     this.collisionSet = [[{ x: 37, y: 33 }, { x: 56, y: 33 }]]
     this.depth = 15;
@@ -1616,6 +1662,7 @@ function Bullet() {
     var ship = null;
     var speed = 500;
     var maxRange = 2000;
+    var damage = 10;
 
 
     this.init = function () {
@@ -1653,13 +1700,13 @@ function Bullet() {
                 var iPoint = this.collidedObjects[i].iPoint;
                 if (cObj != ship && cObj.type != "bullet") {
                     this.gameObject.audio_m.addPlayQueue("hit");
-
+                    
                     var o = newObject(HitEffect);
                     this.manager.addObject(o);
                     o.setPos(iPoint.x, iPoint.y);
                     
                     if (cObj.type == "ship")
-                        cObj.takeDamage(10);
+                        cObj.takeDamage(damage);
 
                     this.destroySelf();
                 }
@@ -1680,8 +1727,13 @@ function Bullet() {
     };
 }
 
+function ShipGUI() {
+
+}
+
 function Dummy() {
 }
+
 
 // Room -------------------------------------------
 
