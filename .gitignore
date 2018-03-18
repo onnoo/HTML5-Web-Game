@@ -2,5 +2,6 @@ contrib/
 docs/
 logs/
 temp/
+/리소스
 *.bat
 *.exe
