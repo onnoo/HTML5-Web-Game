@@ -1,0 +1,6 @@
+contrib/
+docs/
+logs/
+temp/
+*.bat
+*.exe

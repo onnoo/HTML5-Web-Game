@@ -1,0 +1,10 @@
+#main_canvas {
+    /*position: absolute;*/
+    width: 1280px;
+    height: 720px;
+    margin: auto;
+    /*padding: 50px;*/
+    background: #808080;
+    cursor: none;
+    /*color: white;*/
+}

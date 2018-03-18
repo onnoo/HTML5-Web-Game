@@ -1,0 +1,136 @@
+<html>
+<body>
+    <button onclick="test1()">1</button>
+    <button onclick="test2()">2</button>
+    <button onclick="test3()">3</button>
+    <button onclick="test4()">4</button>
+    <button onclick="test5()">5</button>
+    <button onclick="test6()">6</button>
+    <br />
+    <button onclick="test0()">0</button>
+    <button onclick="test0_1()">0_1</button>
+    <button onclick="test0_2()">0_2</button>
+    <script>
+        function Obj() {
+            var a = 0;
+            function f() {
+                return a;
+            }
+        };
+
+        function test0() {
+            var o = new Obj();
+            console.log("LOG: " + o.f());
+        }
+
+        function test0_1() {
+            var i = 0;
+            var len = 100000000;
+            var temp1 = 0;
+            this.temp2 = 1;
+            var ttt1 = Date.now();
+            while (i < len) {
+                temp1 += this.temp2;
+                temp1 += this.temp2;
+                temp1 += this.temp2;
+                temp1 += this.temp2;
+                temp1 += this.temp2;
+                i += 1;
+            }
+            var ttt2 = Date.now();
+            console.log("LOG: " + (ttt2 - ttt1));
+        }
+
+        function test0_2() {
+            var i = 0;
+            var len = 100000000;
+            this.temp1 = 0;
+            this.temp2 = 1;
+            var x = 1;
+            var ttt1 = Date.now();
+            while (i < len) {
+                this.temp1 += x;
+                this.temp1 += x;
+                this.temp1 += x;
+                this.temp1 += x;
+                this.temp1 += x;
+                i += 1;
+            }
+            var ttt2 = Date.now();
+            console.log("LOG: " + (ttt2 - ttt1));
+        }
+
+        function test1() {
+            var i = 0;
+            var len = 100000000;
+            var ttt1 = Date.now();
+            while (i < len) {
+                i = i;
+                i += 1;
+            }
+            var ttt2 = Date.now();
+            console.log("LOG: " + (ttt2 - ttt1));
+        }
+        function test2() {
+            var i = 0;
+            var len = 100000000;
+            var ttt1 = Date.now();
+            for (var i = 0; i < len; i += 1) {
+                i = i;
+            }
+            var ttt2 = Date.now();
+            console.log("LOG: " + (ttt2 - ttt1));
+        }
+        function test3() {
+            this.i = 0;
+            var len = 100000000;
+            var ttt1 = Date.now();
+            for (this.i = 0; this.i < len; this.i += 1) {
+                this.i = this.i;
+            }
+            var ttt2 = Date.now();
+            console.log("LOG: " + (ttt2 - ttt1));
+        }
+        function test4() {
+            this.i = 0;
+            var len = 100000000;
+            this.getI = function () {
+                return this.i;
+            }
+            var ttt1 = Date.now();
+            for (this.i = 0; this.getI() < len; this.i += 1) {
+                this.i = this.getI();
+            }
+            var ttt2 = Date.now();
+            console.log("LOG: " + (ttt2 - ttt1));
+        }
+        function test5() {
+            var i = 0;
+            var len = 100000000;
+            this.getI = function () {
+                return i;
+            }
+            var ttt1 = Date.now();
+            for (i = 0; this.getI() < len; i += 1) {
+                i = this.getI();
+            }
+            var ttt2 = Date.now();
+            console.log("LOG: " + (ttt2 - ttt1));
+        }
+        function test6() {
+            var i = 0;
+            var len = 100000000;
+            function getI() {
+                return i;
+            }
+            var ttt1 = Date.now();
+            for (i = 0; getI() < len; i += 1) {
+                i = getI();
+            }
+            var ttt2 = Date.now();
+            console.log("LOG: " + (ttt2 - ttt1));
+        }
+    </script>
+
+</body>
+</html> 
