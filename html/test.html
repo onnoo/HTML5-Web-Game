@@ -10,6 +10,8 @@
     <button onclick="test0()">0</button>
     <button onclick="test0_1()">0_1</button>
     <button onclick="test0_2()">0_2</button>
+    <button onclick="test0_3()">0_3</button>
+    <button onclick="test0_4()">0_4</button>
     <script>
         function Obj() {
             var a = 0;
@@ -28,13 +30,20 @@
             var len = 100000000;
             var temp1 = 0;
             this.temp2 = 1;
+            var temp3 = 1;
             var ttt1 = Date.now();
             while (i < len) {
-                temp1 += this.temp2;
-                temp1 += this.temp2;
-                temp1 += this.temp2;
-                temp1 += this.temp2;
-                temp1 += this.temp2;
+                <!-- temp1 += this.temp2; -->
+                <!-- temp1 += this.temp2; -->
+                <!-- temp1 += this.temp2; -->
+                <!-- temp1 += this.temp2; -->
+                <!-- temp1 += this.temp2; -->
+				
+				temp1 += temp3;
+                temp1 += temp3;
+                temp1 += temp3;
+                temp1 += temp3;
+                temp1 += temp3;
                 i += 1;
             }
             var ttt2 = Date.now();
@@ -54,6 +63,58 @@
                 this.temp1 += x;
                 this.temp1 += x;
                 this.temp1 += x;
+                i += 1;
+            }
+            var ttt2 = Date.now();
+            console.log("LOG: " + (ttt2 - ttt1));
+        }
+		
+		function test0_3() {
+            var i = 0;
+            var len = 100000000;
+            var temp1 = 0;
+            this.temp2 = 1;
+            var temp3 = 1;
+			var temp_obj = {x:0,y:0}
+            var ttt1 = Date.now();
+            while (i < len) {
+                <!-- temp1 += this.temp2; -->
+                <!-- temp1 += this.temp2; -->
+                <!-- temp1 += this.temp2; -->
+                <!-- temp1 += this.temp2; -->
+                <!-- temp1 += this.temp2; -->
+				
+				temp_obj['x'] += temp3;
+                temp_obj['x'] += temp3;
+                temp_obj['x'] += temp3;
+                temp_obj['x'] += temp3;
+                temp_obj['x'] += temp3;
+                i += 1;
+            }
+            var ttt2 = Date.now();
+            console.log("LOG: " + (ttt2 - ttt1));
+        }
+		
+		function test0_4() {
+            var i = 0;
+            var len = 100000000;
+            var temp1 = 0;
+            this.temp2 = 1;
+            var temp3 = 1;
+			var temp_obj = {x:1,y:0}
+            var ttt1 = Date.now();
+            while (i < len) {
+                <!-- temp1 += this.temp2; -->
+                <!-- temp1 += this.temp2; -->
+                <!-- temp1 += this.temp2; -->
+                <!-- temp1 += this.temp2; -->
+                <!-- temp1 += this.temp2; -->
+				
+				temp1 += temp_obj['x'];
+                temp1 += temp_obj['x'];
+                temp1 += temp_obj['x'];
+                temp1 += temp_obj['x'];
+                temp1 += temp_obj['x'];
                 i += 1;
             }
             var ttt2 = Date.now();
