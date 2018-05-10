@@ -21,7 +21,7 @@ function TestRoom() {
         v = new View();
         v.setWidth(this.gameObject.canvas.width);
         v.setHeight(this.gameObject.canvas.height);
-        v.setZoom(2);
+        //v.setZoom(1);
         v.setRoom(this);
         v.setGameObject(this.gameObject);
         this.setView(v);

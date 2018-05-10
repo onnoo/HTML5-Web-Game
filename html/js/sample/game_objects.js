@@ -15,20 +15,24 @@ function Background() {
     };
 
     this.draw = function (context) {
-        var offsetX = (view.x % image.width) / view.zoom;
-        var offsetY = (view.y % image.height) / view.zoom;
-        var drawX = -offsetX;
-        var drawY = -offsetY;
+        var imageWidth = image.width / view.zoom;
+        var imageHeight = image.height / view.zoom;
+
+        var offsetX = (view.x % image.width);
+        var offsetY = (view.y % image.height);
+        var drawPos = view.viewToContextPos(-offsetX, -offsetY);
+        var drawX = drawPos.x;
+        var drawY = drawPos.y;
         context.fillStyle = "#030303";
         context.fillRect(0, 0, context.canvas.width, context.canvas.height);
-
+        
         while (drawY < view.height) {
-            drawX = -offsetX;
+            drawX = drawPos.x;
             while (drawX < view.width) {
-                context.drawImage(image, drawX, drawY);
-                drawX += image.width;
+                context.drawImage(image, drawX, drawY, imageWidth, imageHeight);
+                drawX += imageWidth;
             }
-            drawY += image.height;
+            drawY += imageHeight;
         }
     };
 }
@@ -42,7 +46,7 @@ function Ship() {
     var view;
     var targetX = -1;
     var targetY = -1;
-    var speed = 100;
+    var speed = 500;
     var BoosterEffectFrequency = 10;
     var BoosterEffectDeltaTime = 0;
     var gun = null;
@@ -390,7 +394,7 @@ function Bullet() {
     var room;
     var view;
     var ship = null;
-    var speed = 500;
+    var speed = 100;
     var maxRange = 2000;
     var damage = 10;
 
