@@ -21,6 +21,7 @@ function TestRoom() {
         v = new View();
         v.setWidth(this.gameObject.canvas.width);
         v.setHeight(this.gameObject.canvas.height);
+        v.setZoom(2);
         v.setRoom(this);
         v.setGameObject(this.gameObject);
         this.setView(v);
@@ -37,7 +38,7 @@ function TestRoom() {
         this.object_m.addObject(o);
         o.setPos(300, 300);
 
-        o = newObject(Curser);
+        o = newObject(Cursor);
         this.object_m.addObject(o);
 
         //for (var i = 0; i < 1000; i += 1) {

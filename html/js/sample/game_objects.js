@@ -15,12 +15,12 @@ function Background() {
     };
 
     this.draw = function (context) {
-        var offsetX = view.x % image.width;
-        var offsetY = view.y % image.height;
+        var offsetX = (view.x % image.width) / view.zoom;
+        var offsetY = (view.y % image.height) / view.zoom;
         var drawX = -offsetX;
         var drawY = -offsetY;
         context.fillStyle = "#030303";
-        context.fillRect(0, 0, view.width, view.height);
+        context.fillRect(0, 0, context.canvas.width, context.canvas.height);
 
         while (drawY < view.height) {
             drawX = -offsetX;
@@ -151,14 +151,14 @@ function Ship() {
     };
 
     this.postDraw = function (context) {
-        var viewPos = view.roomToViewPos(this.x, this.y);
+        var contextMousePos = view.roomToContextPos(this.x, this.y);
         context.beginPath();
         context.globalAlpha = 0.2;
         context.fillStyle = '#FFFFFF';
-        context.fillRect(viewPos.x - (maxHP / 2) - 2, viewPos.y + 68, maxHP + 4, 10);
+        context.fillRect(contextMousePos.x - (maxHP / 2) - 2, contextMousePos.y + 68, maxHP + 4, 10);
         context.globalAlpha = 1;
         context.fillStyle = '#00FF00';
-        context.fillRect(viewPos.x - (maxHP / 2), viewPos.y + 70, hp, 6);
+        context.fillRect(contextMousePos.x - (maxHP / 2), contextMousePos.y + 70, hp, 6);
         context.stroke();
     }
 
@@ -232,7 +232,7 @@ function Gun() {
     };
 }
 
-function Curser() {
+function Cursor() {
     this.depth = 1100;
     var input_m;
     var view;
@@ -243,7 +243,7 @@ function Curser() {
     this.init = function () {
         input_m = this.gameObject.input_m;
         view = this.manager.room.view;
-        //image = this.gameObject.image_m.getImage("curser");
+        //image = this.gameObject.image_m.getImage("cursor");
         image = this.gameObject.image_m.getImage("crosshair");
     };
 
@@ -253,7 +253,7 @@ function Curser() {
                 mouseRightDown = 1;
 
                 var roomMousePos = view.viewToRoomPos(input_m.viewMousePos.x, input_m.viewMousePos.y);
-                var o = newObject(CurserClickEffect);
+                var o = newObject(CursorClickEffect);
                 this.manager.addObject(o);
                 o.setPos(roomMousePos.x, roomMousePos.y);
             }
@@ -263,11 +263,12 @@ function Curser() {
     };
 
     this.draw = function (context) {
-        context.drawImage(image, input_m.viewMousePos.x - 32, input_m.viewMousePos.y - 32);
+        var contextMousePos = view.viewToContextPos(input_m.viewMousePos.x, input_m.viewMousePos.y);
+        context.drawImage(image, contextMousePos.x - 32, contextMousePos.y - 32);
     };
 }
 
-function CurserClickEffect() {
+function CursorClickEffect() {
     this.depth = 8;
     var view;
     var circleSize = 10;
@@ -285,11 +286,11 @@ function CurserClickEffect() {
     };
 
     this.draw = function (context) {
-        var viewPos = view.roomToViewPos(this.x, this.y);
+        var contextPos = view.roomToContextPos(this.x, this.y);
         context.beginPath();
         context.strokeStyle = '#00FF00';
         context.setLineDash([]);
-        context.arc(viewPos.x, viewPos.y, circleSize, 0, 2 * Math.PI);
+        context.arc(contextPos.x, contextPos.y, circleSize, 0, 2 * Math.PI);
         context.stroke();
     };
 }
@@ -311,11 +312,11 @@ function BoosterEffect() {
     };
 
     this.draw = function (context) {
-        var viewPos = view.roomToViewPos(this.x, this.y);
+        var contextPos = view.roomToContextPos(this.x, this.y);
         context.beginPath();
         context.strokeStyle = '#0000FF';
         context.setLineDash([]);
-        context.arc(viewPos.x, viewPos.y, circleSize, 0, 2 * Math.PI);
+        context.arc(contextPos.x, contextPos.y, circleSize, 0, 2 * Math.PI);
         context.stroke();
     };
 }

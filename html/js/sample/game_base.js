@@ -73,6 +73,12 @@ function ObjectPreset() {
     this.getGameObject = function () {
         return this.gameObject;
     }
+    this.isSolid = function () {
+        return this.solid;
+    }
+    this.getCollisionSet = function () {
+        return this.collisionSet;
+    }
 
     this.setX = function (x, relative) {
         relative = typeof relative !== 'undefined' ? relative : false;
@@ -182,6 +188,12 @@ function ObjectPreset() {
     this.setGameObject = function (gameObject) {
         this.gameObject = gameObject;
     }
+    this.setSolid = function (solid) {
+        this.solid = solid;
+    }
+    this.setCollisionSet = function (collisionSet) {
+        return this.collisionSet = collisionSet;
+    }
 
     this.getOffsetPos = function (x, y) {
         return rotationPos(0, 0, x * this.scale, y * this.scale, this.angle);
@@ -197,16 +209,16 @@ function ObjectPreset() {
             if (view.insideSprite(this))
                 drawImageEx(context,
                     this.sprite.image,
-                    view.roomToViewX(this.x),// - (this.sprite.centerX * this.scale)
-                    view.roomToViewY(this.y),// - (this.sprite.centerY * this.scale)
+                    view.roomToContextX(this.x),// - (this.sprite.centerX * this.scale)
+                    view.roomToContextY(this.y),// - (this.sprite.centerY * this.scale)
                     this.sprite.x + (this.sprite.cellWidth * this.sprite.frame),
                     this.sprite.y + (this.sprite.cellHeight * this.sprite.imageSet),
                     this.sprite.cellWidth,
                     this.sprite.cellHeight,
-                    this.sprite.cellWidth * this.scale,
-                    this.sprite.cellHeight * this.scale,
-                    this.sprite.centerX * this.scale,
-                    this.sprite.centerY * this.scale,
+                    this.sprite.cellWidth * this.scale / view.zoom,
+                    this.sprite.cellHeight * this.scale / view.zoom,
+                    this.sprite.centerX * this.scale / view.zoom,
+                    this.sprite.centerY * this.scale / view.zoom,
                     this.angle,
                     this.sprite.alpha);
         }
@@ -602,11 +614,16 @@ function RoomManager(gameObject) {
     };
 }
 
-function InputManager(target) {
+function InputManager(gameObject, target) {
     target = typeof target !== 'undefined' ? target : window;
+    this.gameObject = gameObject;
     this.keyStates = {};
     this.mouseStates = {};
-    this.mousePos = {
+    this.canvasMousePos = {
+        x: 0,
+        y: 0
+    };
+    this.contextMousePos = {
         x: 0,
         y: 0
     };
@@ -614,26 +631,36 @@ function InputManager(target) {
         x: 0,
         y: 0
     };
+    var target = target;
+    var view;
     var asynKeyStates = {};
     var asynMouseStates = {};
-    var asynMousePos = {
+    var asynCanvasMousePos = {
         x: 0,
         y: 0
     };
-    var target = target;
+    var canvasContextRatioX = 1;
+    var canvasContextRatioY = 1;
 
     this.update = function () {
         this.keyStates = cloneObject(asynKeyStates);
         this.mouseStates = cloneObject(asynMouseStates);
-        this.mousePos = cloneObject(asynMousePos);
+        this.canvasMousePos = cloneObject(asynCanvasMousePos);
+        view = this.gameObject.room.view;
 
+        canvasContextRatioX = target.width / target.offsetWidth;
+        canvasContextRatioY = target.height / target.offsetHeight;
 
-        var ratioX = target.width / target.offsetWidth;
-        var ratioY = target.height / target.offsetHeight;
-        this.viewMousePos.x = target.offsetLeft <= this.mousePos.x ? (this.mousePos.x - target.offsetLeft) * ratioX : 0;
-        this.viewMousePos.y = target.offsetTop <= this.mousePos.y ? (this.mousePos.y - target.offsetTop) * ratioY : 0;
+        contextViewRatioX = view.width / target.width;
+        contextViewRatioY = view.height / target.height;
+
+        this.contextMousePos.x = this.canvasMousePos.x * canvasContextRatioX;
+        this.contextMousePos.y = this.canvasMousePos.y * canvasContextRatioY;
+
+        this.viewMousePos.x = this.contextMousePos.x * contextViewRatioX;
+        this.viewMousePos.y = this.contextMousePos.y * contextViewRatioY;
     };
-
+    
     this.getKeyState = function (key) {
         return this.keyStates.hasOwnProperty(key) ? this.keyStates[key] : 0;
     };
@@ -642,24 +669,16 @@ function InputManager(target) {
         return this.mouseStates.hasOwnProperty(mouse) ? this.mouseStates[mouse] : 0;
     };
 
-    this.getViewMousePos = function () {
-        var ratioX = target.width / target.offsetWidth;
-        var ratioY = target.height / target.offsetHeight;
-        return {
-            x: target.offsetLeft <= this.mousePos.x ? (this.mousePos.x - target.offsetLeft) * ratioX : 0,
-            y: target.offsetTop <= this.mousePos.y ? (this.mousePos.y - target.offsetTop) * ratioY : 0
-        };
-    };
-
     this.getCanvasMousePos = function () {
-        return {
-            x: target.offsetLeft <= this.mousePos.x ? this.mousePos.x - target.offsetLeft : 0,
-            y: target.offsetTop <= this.mousePos.y ? this.mousePos.y - target.offsetTop : 0
-        };
+        return this.canvasMousePos;
     };
 
-    this.getRealMousePos = function () {
-        return this.MousePos;
+    this.getContextMousePos = function () {
+        return this.contextMousePos;
+    };
+
+    this.getViewMousePos = function () {
+        return this.viewMousePos;
     };
 
     target.addEventListener('keyup', function (e) {
@@ -671,8 +690,8 @@ function InputManager(target) {
         e.preventDefault();
     });
     target.addEventListener('mousemove', function (e) {
-        asynMousePos.x = e.clientX;
-        asynMousePos.y = e.clientY;
+        asynCanvasMousePos.x = e.offsetX;
+        asynCanvasMousePos.y = e.offsetY;
     });
     target.addEventListener('mousedown', function (e) {
         asynMouseStates[e.button] = 1;
@@ -687,11 +706,18 @@ function View(width, height) {
     height = typeof height !== 'undefined' ? height : 720;
     this.x = 0;
     this.y = 0;
-    this.width = 1280;
-    this.height = 720;
+    this.baseWidth = width;
+    this.baseHeight = height;
+    this.width = width;
+    this.height = height;
     this.room = null;
     this.target = null;
     this.gameObject = null;
+    this.canvas = null;
+    this.context = null;
+    this.zoom = 1
+    var viewContextRatioX = 1;
+    var viewContextRatioY = 1;
 
     this.getX = function () {
         return this.x;
@@ -720,7 +746,26 @@ function View(width, height) {
     this.getGmaeObject = function () {
         return this.gameObject;
     }
+    this.getCanvas = function () {
+        return this.canvas;
+    }
+    this.getContext = function () {
+        return this.context;
+    }
+    this.getContext = function () {
+        return this.zoom;
+    }
 
+    this.setX = function (x) {
+        this.x = x;
+    }
+    this.setY = function (y) {
+        this.y = y;
+    }
+    this.setPos = function (x, y) {
+        this.x = x;
+        this.y = y;
+    }
     this.setWidth = function (width) {
         this.width = width;
     }
@@ -735,9 +780,25 @@ function View(width, height) {
     }
     this.setGameObject = function (gameObject) {
         this.gameObject = gameObject;
+        this.canvas = gameObject.canvas;
+        this.context = gameObject.context;
+    }
+    this.setCanvas = function (canvas) {
+        this.canvas = canvas;
+    }
+    this.setContext = function (context) {
+        this.context = context;
+    }
+    this.setZoom = function (zoom) {
+        this.zoom = zoom;
+        this.width = this.baseWidth * zoom;
+        this.height = this.baseHeight * zoom;
     }
 
     this.update = function () {
+        viewContextRatioX = this.canvas.width / this.width;
+        viewContextRatioY = this.canvas.height / this.height;
+
         if (this.target != null) {
             this.x = this.target.getX() - (this.width / 2);
             this.y = this.target.getY() - (this.height / 2);
@@ -788,15 +849,41 @@ function View(width, height) {
     }
 
     this.roomToViewX = function (x) {
-        return x - this.x;
+        return (x - this.x) * this.zoom;
     }
     this.roomToViewY = function (y) {
-        return y - this.y;
+        return (y - this.y) * this.zoom;
     }
     this.roomToViewPos = function (x, y) {
         return {
-            x: x - this.x,
-            y: y - this.y
+            x: (x - this.x) * this.zoom,
+            y: (y - this.y) * this.zoom
+        };
+    }
+
+    this.viewToContextX = function (x) {
+        return x * viewContextRatioX;
+    }
+    this.viewToContextY = function (y) {
+        return y * viewContextRatioY;
+    }
+    this.viewToContextPos = function (x, y) {
+        return {
+            x: x * viewContextRatioX,
+            y: y * viewContextRatioY
+        };
+    }
+
+    this.roomToContextX = function (x) {
+        return (x - this.x) * viewContextRatioX;
+    }
+    this.roomToContextY = function (y) {
+        return (y - this.y) * viewContextRatioY;
+    }
+    this.roomToContextPos = function (x, y) {
+        return {
+            x: (x - this.x) * viewContextRatioX,
+            y: (y - this.y) * viewContextRatioY
         };
     }
 }
@@ -837,7 +924,7 @@ function Game(canvas, targetFPS) {
     this.audio_m = new AudioManager();
     this.object_m = new ObjectManager(this);
     this.room_m = new RoomManager(this);
-    this.input_m = new InputManager(canvas);
+    this.input_m = new InputManager(this, canvas);
     this.nowLoopTime = 0;
     this.lastTickTime = 0;
     this.loopCallback = null;
