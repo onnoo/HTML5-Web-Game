@@ -20,14 +20,14 @@ function Background() {
 
         var offsetX = (view.x % image.width);
         var offsetY = (view.y % image.height);
-        var drawPos = view.viewToContextPos(-offsetX, -offsetY);
-        var drawX = drawPos.x;
-        var drawY = drawPos.y;
+        var contextPos = view.viewToContextPos(-offsetX, -offsetY);
+        var drawX = contextPos.x;
+        var drawY = contextPos.y;
         context.fillStyle = "#030303";
         context.fillRect(0, 0, context.canvas.width, context.canvas.height);
         
         while (drawY < view.height) {
-            drawX = drawPos.x;
+            drawX = contextPos.x;
             while (drawX < view.width) {
                 context.drawImage(image, drawX, drawY, imageWidth, imageHeight);
                 drawX += imageWidth;
@@ -61,7 +61,7 @@ function Ship() {
         view = this.manager.room.view;
 
         gun = newObject(Gun);
-        this.manager.addObject(gun);
+        this.addChild(gun);
         gun.setShip(this);
         gun.setPos(this.x, this.y);
         gun.setDepth(this.depth + 1);
@@ -156,13 +156,19 @@ function Ship() {
 
     this.postDraw = function (context) {
         var contextMousePos = view.roomToContextPos(this.x, this.y);
+        var hpBarX = contextMousePos.x - ((maxHP / 2) / view.zoom);
+        var hpBarY = contextMousePos.y + (70 / view.zoom);
+        var maxHpBarWidth = maxHP / view.zoom;
+        var hpBarWidth = hp / view.zoom;
+        var hpBarHeight = 6 / view.zoom;
+
         context.beginPath();
         context.globalAlpha = 0.2;
         context.fillStyle = '#FFFFFF';
-        context.fillRect(contextMousePos.x - (maxHP / 2) - 2, contextMousePos.y + 68, maxHP + 4, 10);
+        context.fillRect(hpBarX - 2, hpBarY - 2, maxHpBarWidth + 4, hpBarHeight + 4);
         context.globalAlpha = 1;
         context.fillStyle = '#00FF00';
-        context.fillRect(contextMousePos.x - (maxHP / 2), contextMousePos.y + 70, hp, 6);
+        context.fillRect(hpBarX, hpBarY, hpBarWidth, hpBarHeight);
         context.stroke();
     }
 
@@ -204,29 +210,37 @@ function Gun() {
         ship = _ship;
     }
 
+    this.canFire = function () {
+        return nextFire <= this.gameObject.nowLoopTime
+    }
+
+    this.fire = function () {
+        var offsetPos = this.getOffsetSpritePos(58, 11);
+        var firedPos = { x: this.x + offsetPos.x, y: this.y + offsetPos.y };
+
+        var bullet = newObject(Bullet);
+        this.manager.addObject(bullet);
+        bullet.setShip(ship);
+        bullet.setPos(firedPos.x, firedPos.y);
+        bullet.setAngle(this.angle);
+        bullet.firedPos = firedPos
+
+        this.gameObject.audio_m.addPlayQueue("laser");
+
+        nextFire = this.gameObject.nowLoopTime + (1000 / fireRate);
+    }
+
     this.update = function () {
+        var offsetPos = ship.getOffsetSpritePos(60, 43);
+        this.x = ship.x + offsetPos.x;
+        this.y = ship.y + offsetPos.y;
         if (ship.playerControl) {
             var roomMousePos = view.viewToRoomPos(input_m.viewMousePos.x, input_m.viewMousePos.y);
-            var offsetPos = ship.getOffsetSpritePos(60, 43);
-            this.x = ship.x + offsetPos.x;
-            this.y = ship.y + offsetPos.y;
             this.angle = getAngle(this.x, this.y, roomMousePos.x, roomMousePos.y);
 
             if (input_m.getMouseState(0) == 1) {
-                if (nextFire <= this.gameObject.nowLoopTime) {
-                    offsetPos = this.getOffsetSpritePos(58, 11);
-                    var firedPos = { x: this.x + offsetPos.x, y: this.y + offsetPos.y };
-                    var b = newObject(Bullet);
-                    this.manager.addObject(b);
-                    b.setShip(ship);
-                    b.setPos(firedPos.x, firedPos.y);
-                    b.setAngle(this.angle);
-                    b.firedPos = firedPos
-
-                    this.gameObject.audio_m.addPlayQueue("laser");
-
-                    nextFire = this.gameObject.nowLoopTime + (1000 / fireRate);
-                }
+                if (this.canFire())
+                    this.fire();
             }
         }
     };
@@ -320,7 +334,7 @@ function BoosterEffect() {
         context.beginPath();
         context.strokeStyle = '#0000FF';
         context.setLineDash([]);
-        context.arc(contextPos.x, contextPos.y, circleSize, 0, 2 * Math.PI);
+        context.arc(contextPos.x, contextPos.y, circleSize / view.zoom, 0, 2 * Math.PI);
         context.stroke();
     };
 }
@@ -344,11 +358,11 @@ function HitEffect() {
     };
 
     this.draw = function (context) {
-        var viewPos = view.roomToViewPos(this.x, this.y);
+        var contextPos = view.roomToContextPos(this.x, this.y);
         context.beginPath();
         context.strokeStyle = '#FF0000';
         context.setLineDash([]);
-        context.arc(viewPos.x, viewPos.y, circleSize, 0, 2 * Math.PI);
+        context.arc(contextPos.x, contextPos.y, circleSize / view.zoom, 0, 2 * Math.PI);
         context.stroke();
     };
 }

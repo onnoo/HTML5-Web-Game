@@ -213,7 +213,8 @@ function ObjectPreset() {
         }
         return this.childs = childs;
     }
-    this.addChilds = function (child) {
+    this.addChild = function (child) {
+        this.manager.addObject(child);
         child.parent = this;
         return this.childs.push(child);
     }
@@ -523,9 +524,6 @@ function ObjectManager(gameObject) {
         if (objectList.indexOf(object) != -1)
             return false;
 
-        object.setManager(this);
-        object.setGameObject(this.gameObject);
-        object.init();
         objectList.push(object);
         return true;
     };
@@ -534,6 +532,9 @@ function ObjectManager(gameObject) {
         if (objectList.indexOf(object) != -1)
             return false;
 
+        object.setManager(this);
+        object.setGameObject(this.gameObject);
+        object.init();
         addObjectList.push(object);
         return true;
     };
@@ -998,6 +999,20 @@ function Game(canvas, targetFPS) {
             setTimeout(function () { _this.checkAllAssetsLoaded() }, 100);
     }
 
+    this.gameReady = function () {
+        if (this.room == null) {
+            console.log("ERROR: Room is not set!");
+            return false;
+        }
+        if (this.room.view == null) {
+            console.log("ERROR: View is not set!");
+            return false;
+        }
+
+        console.log("ready!");
+        return true;
+    }
+
     this.init = function () {
         game_rooms = typeof game_rooms !== 'undefined' ? game_rooms : [];
         var i = 0, len = game_rooms.length;
@@ -1014,8 +1029,7 @@ function Game(canvas, targetFPS) {
 
         this.performProcesss();
 
-        ready = true;
-        console.log("ready!");
+        ready = this.gameReady();
     }
 
     this.getRoom = function () {
@@ -1075,6 +1089,74 @@ function Game(canvas, targetFPS) {
         this.loopCallback = setTimeout(function () { _this.loop() }, 0);
     };
 
+    this.objectUpdate = function (obj, func) {
+        if (obj.constructor === Array) {
+            var i = 0, len = obj.length;
+
+            while (i < len) {
+                if (func == -1)
+                    obj[i].preUpdate();
+                else if (func == 1)
+                    obj[i].postUpdate();
+                else 
+                    obj[i].update();
+
+                var childs = obj[i].childs;
+                if (0 < childs.length) {
+                    this.objectUpdate(childs, func);
+                }
+                i += 1;
+            }
+        }
+        else {
+            if (func == -1)
+                obj.preUpdate();
+            else if (func == 1)
+                obj.postUpdate();
+            else 
+                obj.update();
+
+            var childs = obj.childs;
+            if (0 < childs.length) {
+                this.objectUpdate(childs, func);
+            }
+        }
+    }
+
+    this.objectDraw = function (obj, context, func) {
+        if (obj.constructor === Array) {
+            var i = 0, len = obj.length;
+
+            while (i < len) {
+                if (func == -1)
+                    obj[i].preDraw(context);
+                else if (func == 1)
+                    obj[i].postDraw(context);
+                else 
+                    obj[i].draw(context);
+
+                var childs = obj[i].childs;
+                if (0 < childs.length) {
+                    this.objectDraw(childs, context, func);
+                }
+                i += 1;
+            }
+        }
+        else {
+            if (func == -1)
+                obj.preDraw(context);
+            else if (func == 1)
+                obj.postDraw(context);
+            else 
+                obj.draw(context);
+
+            var childs = obj.childs;
+            if (0 < childs.length) {
+                this.objectDraw(childs, context, func);
+            }
+        }
+    }
+
     this.logic = function () {
         this.input_m.update();
         // Global objects update
@@ -1083,17 +1165,20 @@ function Game(canvas, targetFPS) {
 
         var i = 0;
         while (i < len) {
-            objectList[i].preUpdate();
+            if (objectList[i].parent == null)
+                this.objectUpdate(objectList[i], -1)
             i += 1;
         }
         i = 0;
         while (i < len) {
-            objectList[i].update();
+            if (objectList[i].parent == null)
+                this.objectUpdate(objectList[i], 0)
             i += 1;
         }
         i = 0;
         while (i < len) {
-            objectList[i].postUpdate();
+            if (objectList[i].parent == null)
+                this.objectUpdate(objectList[i], 1)
             i += 1;
         }
 
@@ -1104,17 +1189,20 @@ function Game(canvas, targetFPS) {
 
             i = 0;
             while (i < len) {
-                objectList[i].preUpdate();
+                if (objectList[i].parent == null)
+                    this.objectUpdate(objectList[i], -1)
                 i += 1;
             }
             i = 0;
             while (i < len) {
-                objectList[i].update();
+                if (objectList[i].parent == null)
+                    this.objectUpdate(objectList[i], 0)
                 i += 1;
             }
             i = 0;
             while (i < len) {
-                objectList[i].postUpdate();
+                if (objectList[i].parent == null)
+                    this.objectUpdate(objectList[i], 1)
                 i += 1;
             }
 
@@ -1154,20 +1242,26 @@ function Game(canvas, targetFPS) {
 
             var i = 0;
             while (i < len) {
-                if (objectList[i].visible)
-                    objectList[i].preDraw(this.context);
+                if (objectList[i].visible) {
+                    if (objectList[i].parent == null)
+                        this.objectDraw(objectList[i], this.context, -1)
+                }
                 i += 1;
             }
             i = 0;
             while (i < len) {
-                if (objectList[i].visible)
-                    objectList[i].draw(this.context);
+                if (objectList[i].visible) {
+                    if (objectList[i].parent == null)
+                        this.objectDraw(objectList[i], this.context, 0)
+                }
                 i += 1;
             }
             i = 0;
             while (i < len) {
-                if (objectList[i].visible)
-                    objectList[i].postDraw(this.context);
+                if (objectList[i].visible) {
+                    if (objectList[i].parent == null)
+                        this.objectDraw(objectList[i], this.context, 1)
+                }
                 i += 1;
             }
         }

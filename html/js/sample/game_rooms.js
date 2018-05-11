@@ -41,10 +41,10 @@ function TestRoom() {
         o = newObject(Cursor);
         this.object_m.addObject(o);
 
-        //for (var i = 0; i < 1000; i += 1) {
+        // for (var i = 0; i < 1000; i += 1) {
         //    var o = newObject(Dummy);
         //    this.object_m.addObject(o);
         //    o.setSpriteCenter(i, i);
-        //}
+        // }
     }
 }
