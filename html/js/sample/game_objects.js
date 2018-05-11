@@ -46,7 +46,7 @@ function Ship() {
     var view;
     var targetX = -1;
     var targetY = -1;
-    var speed = 500;
+    var speed = 100;
     var BoosterEffectFrequency = 10;
     var BoosterEffectDeltaTime = 0;
     var gun = null;
@@ -394,7 +394,7 @@ function Bullet() {
     var room;
     var view;
     var ship = null;
-    var speed = 100;
+    var speed = 500;
     var maxRange = 2000;
     var damage = 10;
 
