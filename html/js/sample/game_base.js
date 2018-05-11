@@ -27,6 +27,8 @@ function ObjectPreset() {
     this.solid = false;
     this.collisionSet = [];
     this.collidedObjects = [];
+    this.parent = null;
+    this.childs = [];
 
     this.getX = function () {
         return this.x;
@@ -78,6 +80,12 @@ function ObjectPreset() {
     }
     this.getCollisionSet = function () {
         return this.collisionSet;
+    }
+    this.getParent = function () {
+        return this.parent;
+    }
+    this.getChilds = function () {
+        return this.childs;
     }
 
     this.setX = function (x, relative) {
@@ -193,6 +201,32 @@ function ObjectPreset() {
     }
     this.setCollisionSet = function (collisionSet) {
         return this.collisionSet = collisionSet;
+    }
+    this.setParent = function (parent) {
+        return this.parent = parent;
+    }
+    this.setChilds = function (childs) {
+        var i = 0, len = childs.length;
+        while (i < len) {
+            childs[i].parent = this;
+            i += 1;
+        }
+        return this.childs = childs;
+    }
+    this.addChilds = function (child) {
+        child.parent = this;
+        return this.childs.push(child);
+    }
+    this.removeChild = function (child) {
+        var i = 0, len = childs.length;
+        while (i < len) {
+            if (childs[i] === child) {
+                childs.splice(i, 1);
+                return child;
+            }
+            i += 1;
+        }
+        return null;
     }
 
     this.getOffsetPos = function (x, y) {
