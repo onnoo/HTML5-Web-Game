@@ -43,7 +43,7 @@ function getIntersectionPos(a1, a2, b1, b2) {
     var area_abc = (a1.x - b1.x) * (a2.y - b1.y) - (a1.y - b1.y) * (a2.x - b1.x);
     var area_abd = (a1.x - b2.x) * (a2.y - b2.y) - (a1.y - b2.y) * (a2.x - b2.x);
 
-    //∞„√ƒ¡¸
+    //Í≤πÏ≥êÏßê
     if ((a1.x == b1.x && a1.y == b1.y) || (a1.x == b2.x && a1.y == b2.y))
         return { x: a1.x, y: a1.y };
     else if ((a2.x == b1.x && a2.y == b1.y) || (a2.x == b2.x && a2.y == b2.y))
@@ -174,7 +174,7 @@ function collisionCheckObjects(obj1, obj2) {
             b2.y += obj2.y;
             iPoint = getIntersectionPos2(a1, a2, b1, b2);
             if (iPoint != false) {
-                obj1.collidedObjects.push({ iPoint: iPoint, obj: obj2 });//Room ¡¬«•
+                obj1.collidedObjects.push({ iPoint: iPoint, obj: obj2 });//Room Ï¢åÌëú
                 obj2.collidedObjects.push({ iPoint: iPoint, obj: obj1 });
                 return true;
             }

@@ -1067,7 +1067,6 @@ function Game(canvas, targetFPS) {
         this.image_m.loadImage("ship", "/static/image/ship.png");
 
     }
-    this.loadAssets();
 
     this.checkAllAssetsLoaded = function () {
         if (this.image_m.checkAllImagesLoaded() && this.audio_m.checkAllAudiosLoaded())
@@ -1075,7 +1074,6 @@ function Game(canvas, targetFPS) {
         else
             setTimeout(function () { _this.checkAllAssetsLoaded() }, 100);
     }
-    this.checkAllAssetsLoaded()
 
     this.init = function () {
         this.room_m.addRoom("test", newRoom(TestRoom)); // Room major에 TestRoom 추가
@@ -1101,6 +1099,7 @@ function Game(canvas, targetFPS) {
 
         return true;
     }
+
     this.setTargetFPS = function (targetFPS) {
         this.targetFPS = targetFPS;
         this.targetFrameTime = (1000 / this.targetFPS);
@@ -1253,6 +1252,10 @@ function Game(canvas, targetFPS) {
 
         this.audio_m.performPlayAudios();
     };
+
+
+    this.loadAssets();
+    this.checkAllAssetsLoaded()
 }
 
 // Game Object -------------------------------------------
