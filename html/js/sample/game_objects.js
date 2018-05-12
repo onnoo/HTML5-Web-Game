@@ -10,9 +10,7 @@ function Background() {
         image = this.gameObject.image_m.getImage("background_stars");
     }
 
-    this.update = function () {
-        fpsElement.innerHTML = this.gameObject.fpsCounter.getFPS().toFixed(0);
-    };
+    this.update = function () { };
 
     this.draw = function (context) {
         var imageWidth = image.width / view.zoom;

@@ -927,6 +927,7 @@ function FPSCounter(maxQueued) {
     var maxQueued = maxQueued;
     var fpsQueue = [];
     var averageFPS = 0;
+    var show = true;
 
     this.update = function () {
         var len = fpsQueue.length;
@@ -938,6 +939,14 @@ function FPSCounter(maxQueued) {
         averageFPS = temp / len;
     }
 
+    this.draw = function (context) {
+        if (show) {
+            context.font = "15px Arial";
+            context.fillStyle = "#1EFF1E";
+            context.fillText(averageFPS.toFixed().toString() + "fps", 1230, 15);
+        }
+    }
+
     this.addFPS = function (fps) {
         fpsQueue.push(fps);
         if (maxQueued < fpsQueue.length)
@@ -947,14 +956,21 @@ function FPSCounter(maxQueued) {
     this.getFPS = function () {
         return averageFPS;
     }
+
+    this.showFPS = function (_show) {
+        show = _show;
+    }
 }
 
-function Game(canvas, targetFPS) {
+function Game(canvas, targetFPS, runGame) {
     targetFPS = typeof targetFPS !== 'undefined' ? targetFPS : 60;
+    runGame = typeof runGame !== 'undefined' ? runGame : true;
     this.canvas = canvas;
     this.context = canvas.getContext("2d");
     this.targetFPS = targetFPS;
     this.targetFrameTime = (1000 / this.targetFPS);
+    this.width = canvas.width;
+    this.height = canvas.height;
     this.image_m = new ImageManager();
     this.audio_m = new AudioManager();
     this.object_m = new ObjectManager(this);
@@ -1030,6 +1046,9 @@ function Game(canvas, targetFPS) {
         this.performProcesss();
 
         ready = this.gameReady();
+        if (ready && runGame) {
+            this.run();
+        }
     }
 
     this.getRoom = function () {
@@ -1070,8 +1089,6 @@ function Game(canvas, targetFPS) {
         this.nowLoopTime = Date.now();
         deltaTime += (this.nowLoopTime - lastLoopTime);
         if (targetFrameTime <= deltaTime) {
-            this.fpsCounter.addFPS(1000 / (this.nowLoopTime - this.lastTickTime));
-            this.fpsCounter.update();
 
             //var ttt1 = Date.now();
             this.logic();
@@ -1158,6 +1175,8 @@ function Game(canvas, targetFPS) {
     }
 
     this.logic = function () {
+        this.fpsCounter.addFPS(1000 / (this.nowLoopTime - this.lastTickTime));
+        this.fpsCounter.update();
         this.input_m.update();
         // Global objects update
         var objectList = this.object_m.getObjectList();
@@ -1265,6 +1284,8 @@ function Game(canvas, targetFPS) {
                 i += 1;
             }
         }
+        
+        this.fpsCounter.draw(this.context);
     };
 
     this.performProcesss = function () {
