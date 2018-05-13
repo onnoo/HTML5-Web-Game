@@ -1,12 +1,14 @@
 function Background() {
     this.depth = -1000;
     var fpsElement;
+    var room;
     var view;
     var image;
 
     this.init = function () {
         fpsElement = document.getElementById("fps");
-        view = this.manager.room.view;
+        room = this.manager.room;
+        view = room.view;
         image = this.gameObject.image_m.getImage("background_stars");
     }
 
@@ -26,10 +28,11 @@ function Background() {
         var drawY = contextPos.y;
         context.fillStyle = "#030303";
         context.fillRect(0, 0, contextWidth, contextHeight);
-        
-        while (drawY < contextHeight) {
+
+        var roomEndPos = view.roomToContextPos(room.width, room.height);
+        while (drawY < Math.min(contextHeight, roomEndPos.y)) {
             drawX = contextPos.x;
-            while (drawX < contextWidth) {
+            while (drawX < Math.min(contextWidth, roomEndPos.x)) {
                 context.drawImage(image, drawX, drawY, imageWidth, imageHeight);
                 drawX += imageWidth;
             }
@@ -45,6 +48,7 @@ function Ship() {
     this.depth = 10;
     this.type = "ship";
     var input_m;
+    var room;
     var view;
     var targetX = -1;
     var targetY = -1;
@@ -60,7 +64,8 @@ function Ship() {
         this.setSpriteCenter(73, 43);
 
         input_m = this.gameObject.input_m;
-        view = this.manager.room.view;
+        room = this.manager.room;
+        view = room.view;
 
         gun = newObject(Gun);
         this.addChild(gun);
@@ -105,6 +110,11 @@ function Ship() {
                 BoosterEffectDeltaTime -= 1;
             }
         }
+
+        if (room.width <= this.x)
+            this.x = room.width - 1;
+        if (room.height <= this.y)
+            this.y = room.height - 1;
     };
 
     this.draw = function (context) {
