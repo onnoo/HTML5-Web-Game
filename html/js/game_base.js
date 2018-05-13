@@ -750,7 +750,9 @@ function View(width, height) {
     this.gameObject = null;
     this.canvas = null;
     this.context = null;
-    this.zoom = 1
+    this.zoom = 1;
+    this.targetZoom = 1;
+    this.zoomSpeed = 5;
     var viewContextRatioX = 1;
     var viewContextRatioY = 1;
 
@@ -787,8 +789,11 @@ function View(width, height) {
     this.getContext = function () {
         return this.context;
     }
-    this.getContext = function () {
+    this.getZoom = function () {
         return this.zoom;
+    }
+    this.getZoomSpeed = function () {
+        return this.zoomSpeed;
     }
 
     this.setX = function (x) {
@@ -825,14 +830,31 @@ function View(width, height) {
         this.context = context;
     }
     this.setZoom = function (zoom) {
-        this.zoom = zoom;
-        this.width = this.baseWidth * zoom;
-        this.height = this.baseHeight * zoom;
+        if (0 < zoom) {
+            this.targetZoom = zoom;
+        }
+    }
+    this.setZoomSpeed = function (speed) {
+        if (0 <= speed)
+            this.zoomSpeed = speed;
     }
 
     this.update = function () {
+        var tickTimeMul = this.gameObject.tickTimeMul;
         viewContextRatioX = this.canvas.width / this.width;
         viewContextRatioY = this.canvas.height / this.height;
+
+        if (this.zoom != this.targetZoom) {
+            if (this.zoomSpeed == 0) {
+                this.zoom = this.targetZoom;
+            } else {
+                this.zoom = lerp(this.zoom, this.targetZoom, this.zoomSpeed * tickTimeMul, true);
+                if (diff(this.baseWidth * this.zoom, this.baseWidth * this.targetZoom) < 1)
+                    this.zoom = this.targetZoom;
+            }
+            this.width = this.baseWidth * this.zoom;
+            this.height = this.baseHeight * this.zoom;
+        }
 
         if (this.target != null) {
             this.x = this.target.getX() - (this.width / 2);
@@ -943,11 +965,13 @@ function FPSCounter(maxQueued) {
         if (show) {
             context.font = "15px Arial";
             context.fillStyle = "#1EFF1E";
-            context.fillText(averageFPS.toFixed().toString() + "fps", 1230, 15);
+            context.fillText(averageFPS.toFixed().toString() + "fps", context.canvas.width - 50, 15);
         }
     }
 
     this.addFPS = function (fps) {
+        if (fps === Infinity)
+            fps = 999;
         fpsQueue.push(fps);
         if (maxQueued < fpsQueue.length)
             fpsQueue.shift();
@@ -978,6 +1002,8 @@ function Game(canvas, targetFPS, runGame) {
     this.input_m = new InputManager(this, canvas);
     this.nowLoopTime = 0;
     this.lastTickTime = 0;
+    this.tickTime = 0;
+    this.tickTimeMul = 0;
     this.loopCallback = null;
     this.room = null;
     this.fpsCounter = new FPSCounter(10);
@@ -1089,13 +1115,15 @@ function Game(canvas, targetFPS, runGame) {
         this.nowLoopTime = Date.now();
         deltaTime += (this.nowLoopTime - lastLoopTime);
         if (targetFrameTime <= deltaTime) {
+            this.tickTime = this.nowLoopTime - this.lastTickTime;
+            this.tickTimeMul = this.tickTime / 1000;
 
-            //var ttt1 = Date.now();
+            // var ttt1 = Date.now();
             this.logic();
-            //var ttt2 = Date.now();
+            // var ttt2 = Date.now();
             this.render();
-            //var ttt3 = Date.now();
-            //console.log("logic: " + (ttt2 - ttt1) + ", render: " + (ttt3 - ttt2));
+            // var ttt3 = Date.now();
+            // console.log("logic: " + (ttt2 - ttt1) + ", render: " + (ttt3 - ttt2));
 
             this.lastTickTime = this.nowLoopTime;
             deltaTime -= targetFrameTime;
@@ -1174,115 +1202,127 @@ function Game(canvas, targetFPS, runGame) {
         }
     }
 
-    this.logic = function () {
-        this.fpsCounter.addFPS(1000 / (this.nowLoopTime - this.lastTickTime));
-        this.fpsCounter.update();
-        this.input_m.update();
-        // Global objects update
-        var objectList = this.object_m.getObjectList();
-        var len = objectList.length;
+    this.objectListUpdate = function (objectList, pre, main, post) {
+        pre = typeof pre !== 'undefined' ? pre : false;
+        main = typeof main !== 'undefined' ? main : true;
+        post = typeof post !== 'undefined' ? post : false;
+        var i, len = objectList.length;
 
-        var i = 0;
-        while (i < len) {
-            if (objectList[i].parent == null)
-                this.objectUpdate(objectList[i], -1)
-            i += 1;
-        }
-        i = 0;
-        while (i < len) {
-            if (objectList[i].parent == null)
-                this.objectUpdate(objectList[i], 0)
-            i += 1;
-        }
-        i = 0;
-        while (i < len) {
-            if (objectList[i].parent == null)
-                this.objectUpdate(objectList[i], 1)
-            i += 1;
-        }
-
-        // Room objects and view update
-        if (this.room != null) {
-            objectList = this.room.getObjectManager().getObjectList();
-            len = objectList.length;
-
+        if (pre) {
             i = 0;
             while (i < len) {
                 if (objectList[i].parent == null)
                     this.objectUpdate(objectList[i], -1)
                 i += 1;
             }
+        }
+        if (main) {
             i = 0;
             while (i < len) {
                 if (objectList[i].parent == null)
                     this.objectUpdate(objectList[i], 0)
                 i += 1;
             }
+        }
+        if (post) {
             i = 0;
             while (i < len) {
                 if (objectList[i].parent == null)
                     this.objectUpdate(objectList[i], 1)
                 i += 1;
             }
+        }
+    }
+
+    this.objectListDraw = function (objectList, context, pre, main, post) {
+        pre = typeof pre !== 'undefined' ? pre : false;
+        main = typeof main !== 'undefined' ? main : true;
+        post = typeof post !== 'undefined' ? post : false;
+        var i, len = objectList.length;
+
+        if (pre) {
+            i = 0;
+            while (i < len) {
+                if (objectList[i].visible) {
+                    if (objectList[i].parent == null)
+                        this.objectDraw(objectList[i], context, -1)
+                }
+                i += 1;
+            }
+        }
+        if (main) {
+            i = 0;
+            while (i < len) {
+                if (objectList[i].visible) {
+                    if (objectList[i].parent == null)
+                        this.objectDraw(objectList[i], context, 0)
+                }
+                i += 1;
+            }
+        }
+        if (post) {
+            i = 0;
+            while (i < len) {
+                if (objectList[i].visible) {
+                    if (objectList[i].parent == null)
+                        this.objectDraw(objectList[i], context, 1)
+                }
+                i += 1;
+            }
+        }
+    }
+
+    this.objectListCollisionCheck = function (objectList) {
+        var i, ii, len = objectList.length;
+
+        i = 0;
+        while (i < len) {
+            if (objectList[i].solid) {
+                ii = i + 1;
+                while (ii < len) {
+                    if (objectList[ii].solid)
+                        collisionCheckObjects(objectList[i], objectList[ii]);
+                    ii += 1;
+                }
+            }
+            i += 1;
+        }
+    }
+
+    this.logic = function () {
+        this.fpsCounter.addFPS(1000 / this.tickTime);
+        this.fpsCounter.update();
+        this.input_m.update();
+
+        // Global objects update
+        var objectList = this.object_m.getObjectList();
+        this.objectListUpdate(objectList)
+
+        // Room objects and view update
+        if (this.room != null) {
+            objectList = this.room.getObjectManager().getObjectList();
+            this.objectListUpdate(objectList)
 
             this.room.getView().update();
         }
-
 
         this.performProcesss();
 
         // Room objects collision check
         if (this.room != null) {
             objectList = this.room.getObjectManager().getObjectList();
-            len = objectList.length;
-
-            i = 0;
-            while (i < len) {
-                if (objectList[i].solid) {
-                    var ii = i + 1;
-                    while (ii < len) {
-                        if (objectList[ii].solid)
-                            collisionCheckObjects(objectList[i], objectList[ii]);
-                        ii += 1;
-                    }
-                }
-                i += 1;
-            }
+            this.objectListCollisionCheck(objectList);
         }
     };
 
     this.render = function () {
         if (document.visibilityState != "visible")
             return;
+
         // Room objects draw
         if (this.room != null) {
             var objectList = this.room.getObjectManager().getObjectList();
-            var len = objectList.length;
-
-            var i = 0;
-            while (i < len) {
-                if (objectList[i].visible) {
-                    if (objectList[i].parent == null)
-                        this.objectDraw(objectList[i], this.context, -1)
-                }
-                i += 1;
-            }
-            i = 0;
-            while (i < len) {
-                if (objectList[i].visible) {
-                    if (objectList[i].parent == null)
-                        this.objectDraw(objectList[i], this.context, 0)
-                }
-                i += 1;
-            }
-            i = 0;
-            while (i < len) {
-                if (objectList[i].visible) {
-                    if (objectList[i].parent == null)
-                        this.objectDraw(objectList[i], this.context, 1)
-                }
-                i += 1;
-            }
+            this.objectListDraw(objectList, this.context);
         }
         
         this.fpsCounter.draw(this.context);

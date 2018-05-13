@@ -184,3 +184,38 @@ function collisionCheckObjects(obj1, obj2) {
     }
     return false;
 }
+
+function requestFullScreen(element) {
+    if(element.requestFullScreen) {
+        element.requestFullScreen();
+    } else if(element.webkitRequestFullScreen ) {
+        element.webkitRequestFullScreen();
+    } else if(element.mozRequestFullScreen) {
+        element.mozRequestFullScreen();
+    } else if (element.msRequestFullscreen) {
+        element.msRequestFullscreen();
+    }
+}
+
+function exitFullscreen(element) {
+    if(element.exitFullscreen) {
+        element.exitFullscreen();
+    } else if(element.webkitExitFullscreen ) {
+        element.webkitExitFullscreen();
+    } else if(element.mozCancelFullScreen) {
+        element.mozCancelFullScreen();
+    } else if (element.msExitFullscreen) {
+        element.msExitFullscreen();
+    }
+}
+
+function lerp(start, end, amt, limit){
+    limit = typeof limit !== 'undefined' ? limit : false;
+    if (limit && (1 < amt))
+        amt = 1;
+    return (1 - amt) * start + amt * end;
+}
+
+function diff(a, b){
+    return Math.abs(a - b);
+}

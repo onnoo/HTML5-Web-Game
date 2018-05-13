@@ -37,7 +37,7 @@ var game_assets = [
     {
         type: "audio",
         name: "laser",
-        src: "/static/sound/laser1.wav",
+        src: "/static/sound/laser1.mp3",
         volume: 0.3
     },
     {
@@ -49,7 +49,7 @@ var game_assets = [
     {
         type: "audio",
         name: "boom",
-        src: "/static/sound/boom.wav"
+        src: "/static/sound/boom.mp3"
     }
 ];
 

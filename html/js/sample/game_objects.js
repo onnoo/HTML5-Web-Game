@@ -13,6 +13,9 @@ function Background() {
     this.update = function () { };
 
     this.draw = function (context) {
+        var contextWidth = context.canvas.width;
+        var contextHeight = context.canvas.height;
+
         var imageWidth = image.width / view.zoom;
         var imageHeight = image.height / view.zoom;
 
@@ -22,16 +25,17 @@ function Background() {
         var drawX = contextPos.x;
         var drawY = contextPos.y;
         context.fillStyle = "#030303";
-        context.fillRect(0, 0, context.canvas.width, context.canvas.height);
+        context.fillRect(0, 0, contextWidth, contextHeight);
         
-        while (drawY < view.height) {
+        while (drawY < contextHeight) {
             drawX = contextPos.x;
-            while (drawX < view.width) {
+            while (drawX < contextWidth) {
                 context.drawImage(image, drawX, drawY, imageWidth, imageHeight);
                 drawX += imageWidth;
             }
             drawY += imageHeight;
         }
+        this.debug = false;
     };
 }
 
@@ -68,7 +72,7 @@ function Ship() {
     }
 
     this.update = function () {
-        var tickTimeMul = (this.gameObject.nowLoopTime - this.gameObject.lastTickTime) / 1000;
+        var tickTimeMul = this.gameObject.tickTimeMul;
         if (this.playerControl) {
             if (input_m.getMouseState(2) == 1) {
                 var roomMousePos = view.viewToRoomPos(input_m.viewMousePos.x, input_m.viewMousePos.y);
@@ -81,7 +85,7 @@ function Ship() {
             var targetDistance = getDistance(this.x, this.y, targetX, targetY);
             var targetAngle = getAngle(this.x, this.y, targetX, targetY);
             if (speed * tickTimeMul < targetDistance) {
-                var targetMovePos = angleDistanceToPos(targetAngle, speed * tickTimeMul)
+                var targetMovePos = angleDistanceToPos(targetAngle, speed * tickTimeMul);
                 this.x += targetMovePos.x;
                 this.y += targetMovePos.y;
             }
@@ -149,10 +153,10 @@ function Ship() {
             context.stroke();
             this.collidedObjects = [];
         }
-
+        this.drawHpBar(context);
     };
 
-    this.postDraw = function (context) {
+    this.drawHpBar = function (context) {
         var contextMousePos = view.roomToContextPos(this.x, this.y);
         var hpBarX = contextMousePos.x - ((maxHP / 2) / view.zoom);
         var hpBarY = contextMousePos.y + (70 / view.zoom);
@@ -168,7 +172,7 @@ function Ship() {
         context.fillStyle = '#00FF00';
         context.fillRect(hpBarX, hpBarY, hpBarWidth, hpBarHeight);
         context.stroke();
-    }
+    };
 
     this.takeDamage = function (damage) {
         hp -= damage;
@@ -295,7 +299,7 @@ function CursorClickEffect() {
     }
 
     this.update = function () {
-        var tickTimeMul = (this.gameObject.nowLoopTime - this.gameObject.lastTickTime) / 1000;
+        var tickTimeMul = this.gameObject.tickTimeMul;
         circleSize -= speed * tickTimeMul;
         if (circleSize < 0)
             this.destroySelf();
@@ -321,7 +325,7 @@ function BoosterEffect() {
     }
 
     this.update = function () {
-        var tickTimeMul = (this.gameObject.nowLoopTime - this.gameObject.lastTickTime) / 1000;
+        var tickTimeMul = this.gameObject.tickTimeMul;
         circleSize -= speed * tickTimeMul;
         if (circleSize < 0)
             this.destroySelf();
@@ -349,7 +353,7 @@ function HitEffect() {
     }
 
     this.update = function () {
-        var tickTimeMul = (this.gameObject.nowLoopTime - this.gameObject.lastTickTime) / 1000;
+        var tickTimeMul = this.gameObject.tickTimeMul;
         circleSize += speed * tickTimeMul;
         if (circleMaxSize < circleSize)
             this.destroySelf();
@@ -382,7 +386,7 @@ function ExplosionEffect() {
     }
 
     this.update = function () {
-        var tickTimeMul = (this.gameObject.nowLoopTime - this.gameObject.lastTickTime) / 1000;
+        var tickTimeMul = this.gameObject.tickTimeMul;
         animFrame += frameSpeed * tickTimeMul;
         var intAnimFrame = Math.floor(animFrame);
         if (animMaxFrame <= intAnimFrame)
@@ -428,7 +432,7 @@ function Bullet() {
     }
 
     this.update = function () {
-        var tickTimeMul = (this.gameObject.nowLoopTime - this.gameObject.lastTickTime) / 1000;
+        var tickTimeMul = this.gameObject.tickTimeMul;
         var targetMovePos = angleDistanceToPos(this.angle, speed * tickTimeMul)
         var moveDistance = getDistance(0, 0, targetMovePos.x, targetMovePos.y);
         this.x += targetMovePos.x;

@@ -43,13 +43,13 @@ function resizeCanvas() {
         newGameHeight = newGameWidth * gameHeight / gameWidth;		 
     }
 
-    canvas.style.width = newGameWidth + "px";
-    canvas.style.height = newGameHeight + "px";
+    canvas.style.width = newGameWidth.toFixed() + "px";
+    canvas.style.height = newGameHeight.toFixed() + "px";
 
     newGameX = (viewportWidth - newGameWidth) / 2;
     newGameY = (viewportHeigth - newGameHeight) / 2;
 
-    canvas.style.margin = newGameY + "px " + newGameX + "px";
+    canvas.style.margin = newGameY.toFixed() + "px " + newGameX.toFixed() + "px";
 };
 
 function start() {

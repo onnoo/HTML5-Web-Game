@@ -7,7 +7,8 @@
     <button onclick="test5()">5</button>
     <button onclick="test6()">6</button>
     <br />
-    <button onclick="test0()">0</button>
+    <button onclick="test0(3)">0</button>
+    <button onclick="test00(3)">00</button>
     <button onclick="test0_1()">0_1</button>
     <button onclick="test0_2()">0_2</button>
     <button onclick="test0_3()">0_3</button>
@@ -20,9 +21,42 @@
             }
         };
 
-        function test0() {
-            var o = new Obj();
-            console.log("LOG: " + o.f());
+        function test0(arg) {
+            var i = 0;
+            var len = 100000000;
+            var temp1 = 0;
+            //var temp2 = 1;
+            var ttt1 = Date.now();
+            while (i < len) {
+				temp1 += arg;
+                temp1 += arg;
+                temp1 += arg;
+                temp1 += arg;
+                temp1 += arg;
+                i += 1;
+            }
+            var ttt2 = Date.now();
+            console.log(temp1);
+            console.log("LOG: " + (ttt2 - ttt1));
+        }
+
+        function test00(arg) {
+            var i = 0;
+            var len = 100000000;
+            var temp1 = 0;
+            var temp2 = arg;
+            var ttt1 = Date.now();
+            while (i < len) {
+				temp1 += temp2;
+                temp1 += temp2;
+                temp1 += temp2;
+                temp1 += temp2;
+                temp1 += temp2;
+                i += 1;
+            }
+            var ttt2 = Date.now();
+            console.log(temp1);
+            console.log("LOG: " + (ttt2 - ttt1));
         }
 
         function test0_1() {
