@@ -102,7 +102,8 @@ function Ship() {
 
             BoosterEffectDeltaTime += BoosterEffectFrequency * tickTimeMul;
             if (1 <= BoosterEffectDeltaTime) {
-                var boosterPos = angleDistanceToPos(this.angle - 180, 60);
+                //var boosterPos = angleDistanceToPos(this.angle - 180, 60);
+                var boosterPos = this.getOffsetSpritePos(13, 43);
                 var o = newObject(BoosterEffect);
                 this.manager.addObject(o);
                 o.setPos(this.x + boosterPos.x, this.y + boosterPos.y);
@@ -118,34 +119,33 @@ function Ship() {
     };
 
     this.draw = function (context) {
-        var drawTargetPath = false;
+        var drawTargetPath = true;
         if (drawTargetPath) {
             if ((targetX != -1) || (targetY != -1) && ((this.x != targetX) || (this.y != targetY))) {
-                var viewPos = view.roomToViewPos(this.x, this.y);
-                var viewTragetPos = view.roomToViewPos(targetX, targetY);
+                var contextPos = view.roomToContextPos(this.x, this.y);
+                var contextTragetPos = view.roomToContextPos(targetX, targetY);
                 context.beginPath();
                 context.strokeStyle = '#00FF00';
                 context.setLineDash([5, 15]);
                 //context.moveTo(viewPos.x, viewPos.y);
                 //context.lineTo(viewTragetPos.x, viewTragetPos.y);
-                context.moveTo(viewTragetPos.x, viewTragetPos.y);
-                context.lineTo(viewPos.x, viewPos.y);
+                context.moveTo(contextTragetPos.x, contextTragetPos.y);
+                context.lineTo(contextPos.x, contextPos.y);
                 context.stroke();
             }
         }
         this.drawSprite(context);
-        var drawCollisionSet = false;
+        var drawCollisionSet = true;
         if (drawCollisionSet) {
-            var viewPos = view.roomToViewPos(this.x, this.y);
             var len = this.collisionSet.length;
             var i = 0;
 
             context.setLineDash([]);
             if (0 < this.collidedObjects.length) {
-                var viewIPointPos = view.roomToViewPos(this.collidedObjects[0].iPoint.x, this.collidedObjects[0].iPoint.y);
+                var contextIPointPos = view.roomToContextPos(this.collidedObjects[0].iPoint.x, this.collidedObjects[0].iPoint.y);
                 context.beginPath();
                 context.strokeStyle = '#FF0000';
-                context.arc(viewIPointPos.x, viewIPointPos.y, 5, 0, 2 * Math.PI);
+                context.arc(contextIPointPos.x, contextIPointPos.y, 5, 0, 2 * Math.PI);
                 context.fillStyle = 'green';
                 context.fill();
                 context.stroke();
@@ -156,8 +156,10 @@ function Ship() {
             while (i < len) {
                 var aPos = this.getOffsetSpritePos(this.collisionSet[i][0].x, this.collisionSet[i][0].y);
                 var bPos = this.getOffsetSpritePos(this.collisionSet[i][1].x, this.collisionSet[i][1].y);
-                context.moveTo(viewPos.x + aPos.x, viewPos.y + aPos.y);
-                context.lineTo(viewPos.x + bPos.x, viewPos.y + bPos.y);
+                var contextAPos = view.roomToContextPos(this.x + aPos.x, this.y + aPos.y);
+                var contextBPos = view.roomToContextPos(this.x + bPos.x, this.y + bPos.y);
+                context.moveTo(contextAPos.x, contextAPos.y);
+                context.lineTo(contextBPos.x, contextBPos.y);
                 i += 1;
             }
             context.stroke();

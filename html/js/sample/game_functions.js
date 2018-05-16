@@ -150,6 +150,24 @@ function collisionCheckBox(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2) {
         ay2 >= by1;
 }
 
+function collisionCheck(collisionMesh1, collisionMesh2) {
+    var type1 = collisionMesh1.type;
+    var type2 = collisionMesh2.type;
+
+    var BoxAndBox = function (collisionMesh1, collisionMesh2) {
+        return collisionMesh1.x1 <= collisionMesh2.x2 &&
+            collisionMesh1.x2 >= collisionMesh2.x1 &&
+            collisionMesh1.y1 <= collisionMesh2.y2 &&
+            collisionMesh1.y2 >= collisionMesh2.y1;
+    };
+
+    if (type1 == "Box") {
+        if (type2 == "Box") {
+            return BoxAndBox(collisionMesh1, collisionMesh2)
+        }
+    }
+}
+
 function collisionCheckObjects(obj1, obj2) {
     var collisionSet1 = obj1.collisionSet;
     var collisionSet2 = obj2.collisionSet;
