@@ -1,14 +1,10 @@
 function Background() {
     this.depth = -1000;
-    var fpsElement;
-    var room;
     var view;
     var image;
 
     this.init = function () {
-        fpsElement = document.getElementById("fps");
-        room = this.manager.room;
-        view = room.view;
+        view = this.room.view;
         image = this.gameObject.image_m.getImage("background_stars");
     }
 
@@ -26,10 +22,10 @@ function Background() {
         var contextPos = view.viewToContextPos(-offsetX, -offsetY);
         var drawX = contextPos.x;
         var drawY = contextPos.y;
-        context.fillStyle = "#030303";
-        context.fillRect(0, 0, contextWidth, contextHeight);
 
-        var roomEndPos = view.roomToContextPos(room.width, room.height);
+        drawRect(context, 0, 0, contextWidth, contextHeight, null, "#030303", true);
+
+        var roomEndPos = view.roomToContextPos(this.room.width, this.room.height);
         while (drawY < Math.min(contextHeight, roomEndPos.y)) {
             drawX = contextPos.x;
             while (drawX < Math.min(contextWidth, roomEndPos.x)) {
@@ -48,7 +44,6 @@ function Ship() {
     this.depth = 10;
     this.type = "ship";
     var input_m;
-    var room;
     var view;
     var targetX = -1;
     var targetY = -1;
@@ -64,8 +59,7 @@ function Ship() {
         this.setSpriteCenter(73, 43);
 
         input_m = this.gameObject.input_m;
-        room = this.manager.room;
-        view = room.view;
+        view = this.room.view;
 
         gun = newObject(Gun);
         this.addChild(gun);
@@ -112,10 +106,14 @@ function Ship() {
             }
         }
 
-        if (room.width <= this.x)
+        if (this.room.width <= this.x)
             this.x = room.width - 1;
-        if (room.height <= this.y)
-            this.y = room.height - 1;
+        else if (this.x < 0)
+            this.x = 0;
+        if (this.room.height <= this.y)
+            this.y = this.room.height - 1;
+        else if (this.y < 0)
+            this.y = 0;
     };
 
     this.draw = function (context) {
@@ -196,7 +194,7 @@ function Gun() {
         this.setSpriteCenter(23, 11);
 
         input_m = this.gameObject.input_m;
-        view = this.manager.room.view;
+        view = this.room.view;
     }
 
     this.getShip = function () {
@@ -256,7 +254,7 @@ function Cursor() {
 
     this.init = function () {
         input_m = this.gameObject.input_m;
-        view = this.manager.room.view;
+        view = this.room.view;
         //image = this.gameObject.image_m.getImage("cursor");
         image = this.gameObject.image_m.getImage("crosshair");
     };
@@ -289,7 +287,7 @@ function CursorClickEffect() {
     var speed = 35;
 
     this.init = function () {
-        view = this.manager.room.view;
+        view = this.room.view;
     }
 
     this.update = function () {
@@ -311,7 +309,7 @@ function BoosterEffect() {
     var speed = 15;
 
     this.init = function () {
-        view = this.manager.room.view;
+        view = this.room.view;
     }
 
     this.update = function () {
@@ -335,7 +333,7 @@ function HitEffect() {
     var speed = 50;
 
     this.init = function () {
-        view = this.manager.room.view;
+        view = this.room.view;
     }
 
     this.update = function () {
@@ -360,7 +358,7 @@ function ExplosionEffect() {
     var animMaxFrame = 64;
 
     this.init = function () {
-        view = this.manager.room.view;
+        view = this.room.view;
 
         var image = this.gameObject.image_m.getImage("explosion");
         this.setSprite(image, 0, 0, image.width, image.height, 256, 256, 128, 128);
@@ -389,7 +387,6 @@ function Bullet() {
     this.solid = true;
     this.type = "bullet";
     this.firedPos;
-    var room;
     var view;
     var ship = null;
     var speed = 500;
@@ -402,8 +399,7 @@ function Bullet() {
         this.setSprite(image, 0, 0, image.width, image.height, 95, 68, 46, 33);
         this.setSpriteFrame(0, 0);
 
-        room = this.manager.room;
-        view = room.view;
+        view = this.room.view;
     }
 
     this.getShip = function () {
@@ -448,7 +444,7 @@ function Bullet() {
         this.collidedObjects = [];
 
 
-        if (this.x < -100 || this.y < -100 || room.width + 100 < this.x || room.height + 100 < this.y ||
+        if (this.x < -100 || this.y < -100 || this.room.width + 100 < this.x || this.room.height + 100 < this.y ||
             maxRange < getDistance(this.firedPos.x, this.firedPos.y, this.x, this.y)) {
             this.destroySelf();
         }

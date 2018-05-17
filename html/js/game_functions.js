@@ -277,12 +277,12 @@ function drawRect(context, x, y, width, height, color, fillColor, fillOnly, line
     fillOnly = typeof fillOnly !== 'undefined' ? fillOnly : false;
     lineDash = typeof lineDash !== 'undefined' ? lineDash : [];
 
-    context.beginPath();
     if (fillOnly) {
         context.fillStyle = fillColor;
         context.fillRect(x, y, width, height);
     }
     else {
+        context.beginPath();
         context.strokeStyle = color;
         context.setLineDash(lineDash);
         context.rect(x, y, width, height);
@@ -290,7 +290,6 @@ function drawRect(context, x, y, width, height, color, fillColor, fillOnly, line
             context.fillStyle = fillColor;
             context.fill();
         }
-
+        context.stroke();
     }
-    context.stroke();
 }

@@ -1,4 +1,10 @@
-var game_assets = []
+var game_assets = [
+    {
+        type: "image",
+        name: "crosshair",
+        src: "/static/image/crosshair.png"
+    }
+]
 
 //{
 //    type: "",

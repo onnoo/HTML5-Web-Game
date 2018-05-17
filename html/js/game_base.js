@@ -26,6 +26,7 @@ function ObjectPreset() {
     this.class = "";
     this.name = "";
     this.manager = null;
+    this.room = null; // no setter
     this.gameObject = null;
     this.solid = false;
     this.collisionSet = [];
@@ -74,6 +75,9 @@ function ObjectPreset() {
     }
     this.getManager = function () {
         return this.manager;
+    }
+    this.getRoom = function () {
+        return this.room;
     }
     this.getGameObject = function () {
         return this.gameObject;
@@ -210,6 +214,8 @@ function ObjectPreset() {
     }
     this.setManager = function (manager) {
         this.manager = manager;
+        this.room = manager.room;
+        this.view = this.room.view;
     }
     this.setGameObject = function (gameObject) {
         this.gameObject = gameObject;
