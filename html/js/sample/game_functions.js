@@ -240,6 +240,7 @@ function diff(a, b) {
 
 function drawCircle(context, x, y, radius, color, fillColor, lineDash, startAngle, endAngle, counterclockwise) {
     color = typeof color !== 'undefined' ? color : "#555555";
+    fillColor = typeof fillColor !== 'undefined' ? fillColor : null;
     lineDash = typeof lineDash !== 'undefined' ? lineDash : [];
     startAngle = typeof startAngle !== 'undefined' ? startAngle : 0;
     endAngle = typeof endAngle !== 'undefined' ? endAngle : 2 * Math.PI;
