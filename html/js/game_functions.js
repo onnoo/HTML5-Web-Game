@@ -150,6 +150,24 @@ function collisionCheckBox(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2) {
         ay2 >= by1;
 }
 
+function collisionCheck(collisionMesh1, collisionMesh2) {
+    var type1 = collisionMesh1.type;
+    var type2 = collisionMesh2.type;
+
+    var BoxAndBox = function (collisionMesh1, collisionMesh2) {
+        return collisionMesh1.x1 <= collisionMesh2.x2 &&
+            collisionMesh1.x2 >= collisionMesh2.x1 &&
+            collisionMesh1.y1 <= collisionMesh2.y2 &&
+            collisionMesh1.y2 >= collisionMesh2.y1;
+    };
+
+    if (type1 == "Box") {
+        if (type2 == "Box") {
+            return BoxAndBox(collisionMesh1, collisionMesh2)
+        }
+    }
+}
+
 function collisionCheckObjects(obj1, obj2) {
     var collisionSet1 = obj1.collisionSet;
     var collisionSet2 = obj2.collisionSet;
@@ -209,13 +227,70 @@ function exitFullscreen(element) {
     }
 }
 
-function lerp(start, end, amt, limit){
+function lerp(start, end, amt, limit) {
     limit = typeof limit !== 'undefined' ? limit : false;
     if (limit && (1 < amt))
         amt = 1;
     return (1 - amt) * start + amt * end;
 }
 
-function diff(a, b){
+function diff(a, b) {
     return Math.abs(a - b);
+}
+
+function drawCircle(context, x, y, radius, color, fillColor, lineDash, startAngle, endAngle, counterclockwise) {
+    color = typeof color !== 'undefined' ? color : "#555555";
+    fillColor = typeof fillColor !== 'undefined' ? fillColor : null;
+    lineDash = typeof lineDash !== 'undefined' ? lineDash : [];
+    startAngle = typeof startAngle !== 'undefined' ? startAngle : 0;
+    endAngle = typeof endAngle !== 'undefined' ? endAngle : 2 * Math.PI;
+    counterclockwise = typeof counterclockwise !== 'undefined' ? counterclockwise : false;
+
+    context.strokeStyle = color;
+
+    context.beginPath();
+    context.setLineDash(lineDash);
+    context.arc(x, y, radius, startAngle, endAngle, counterclockwise);
+    if (fillColor !== null) {
+        context.fillStyle = fillColor;
+        context.fill();
+    }
+    context.stroke();
+}
+
+function drawLine(context, x1, y1, x2, y2, color, lineDash) {
+    color = typeof color !== 'undefined' ? color : "#555555";
+    lineDash = typeof lineDash !== 'undefined' ? lineDash : [];
+
+    context.strokeStyle = color;
+
+    context.beginPath();
+    context.setLineDash(lineDash);
+    context.moveTo(x1, y1);
+    context.lineTo(x2, y2);
+    context.stroke();
+}
+
+function drawRect(context, x, y, width, height, color, fillColor, fillOnly, lineDash) {
+    color = typeof color !== 'undefined' ? color : "#555555";
+    fillColor = typeof fillColor !== 'undefined' ? fillColor : null;
+    fillOnly = typeof fillOnly !== 'undefined' ? fillOnly : false;
+    lineDash = typeof lineDash !== 'undefined' ? lineDash : [];
+
+    context.beginPath();
+    if (fillOnly) {
+        context.fillStyle = fillColor;
+        context.fillRect(x, y, width, height);
+    }
+    else {
+        context.strokeStyle = color;
+        context.setLineDash(lineDash);
+        context.rect(x, y, width, height);
+        if (fillColor !== null) {
+            context.fillStyle = fillColor;
+            context.fill();
+        }
+
+    }
+    context.stroke();
 }

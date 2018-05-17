@@ -2,7 +2,10 @@ function ObjectPreset() {
     this.x = 0;
     this.y = 0;
     this.angle = 0;
-    this.scale = 1;
+    this.scale = {
+        x: 1,
+        y: 1
+    };
     this.sprite = {
         image: null,
         x: 0,
@@ -121,12 +124,27 @@ function ObjectPreset() {
             this.angle = angle;
         this.angle %= 360;
     }
-    this.setScale = function (scale, relative) {
+    this.setScale = function (scaleX, scaleY, relative, applyChilds) {
         relative = typeof relative !== 'undefined' ? relative : false;
-        if (relative)
-            this.scale += scale;
-        else
-            this.scale = scale;
+        scaleY = typeof scaleY !== 'undefined' ? scaleY : scaleX;
+        applyChilds = typeof applyChilds !== 'undefined' ? applyChilds : true;
+        
+        if (relative) {
+            this.scale.x += scaleX;
+            this.scale.y += scaleY;
+        }
+        else {
+            this.scale.x = scaleX;
+            this.scale.y = scaleY;
+        }
+        if (applyChilds) {
+            var childs = this.childs;
+            var i = 0, len = childs.length;
+            while (i < len) {
+                childs[i].setScale(scaleX, scaleY, relative, applyChilds);
+                i += 1;
+            }
+        }
     }
     this.setAlpha = function (alpha, relative) {
         relative = typeof relative !== 'undefined' ? relative : false;
@@ -231,11 +249,11 @@ function ObjectPreset() {
     }
 
     this.getOffsetPos = function (x, y) {
-        return rotationPos(0, 0, x * this.scale, y * this.scale, this.angle);
+        return rotationPos(0, 0, x * this.scale.x, y * this.scale.y, this.angle);
     }
 
     this.getOffsetSpritePos = function (x, y) {
-        return rotationPos(0, 0, (x - (this.sprite.cellWidth / 2)) * this.scale, (y - (this.sprite.cellHeight / 2)) * this.scale, this.angle);
+        return rotationPos(0, 0, (x - this.sprite.centerX) * this.scale.x, (y - this.sprite.centerY) * this.scale.y, this.angle);
     }
 
     this.drawSprite = function (context) {
@@ -250,10 +268,10 @@ function ObjectPreset() {
                     this.sprite.y + (this.sprite.cellHeight * this.sprite.imageSet),
                     this.sprite.cellWidth,
                     this.sprite.cellHeight,
-                    this.sprite.cellWidth * this.scale / view.zoom,
-                    this.sprite.cellHeight * this.scale / view.zoom,
-                    this.sprite.centerX * this.scale / view.zoom,
-                    this.sprite.centerY * this.scale / view.zoom,
+                    this.sprite.cellWidth * this.scale.x / view.zoom,
+                    this.sprite.cellHeight * this.scale.y / view.zoom,
+                    this.sprite.centerX * this.scale.x / view.zoom,
+                    this.sprite.centerY * this.scale.y / view.zoom,
                     this.angle,
                     this.sprite.alpha);
         }
@@ -1346,4 +1364,78 @@ function Game(canvas, targetFPS, runGame) {
 
     this.loadAssets();
     this.checkAllAssetsLoaded()
+}
+
+function CollisionMesh(type, args) {
+    this.valid = false;
+    this.type = type;
+    if (typeof type === 'undefined')
+        return;
+    
+    if (type == "Point") {
+        if (arguments.length != 3)
+            return;
+        this.x = arguments[1];
+        this.y = arguments[2];
+    }
+    else if (type == "Segment") {
+        if (arguments.length != 5)
+            return;
+        this.x1 = arguments[1];
+        this.y1 = arguments[2];
+        this.x2 = arguments[3];
+        this.y2 = arguments[4];
+    }
+    else if (type == "Box") { // AABB
+        if (arguments.length != 5)
+            return;
+        this.x1 = arguments[1];
+        this.y1 = arguments[2];
+        this.x2 = arguments[3];
+        this.y2 = arguments[4];
+    }
+    else if (type == "Circle") {
+        if (arguments.length != 7)
+            return;
+        this.x1 = arguments[1];
+        this.y1 = arguments[2];
+        this.radius1 = arguments[3];
+        this.x2 = arguments[4];
+        this.y2 = arguments[5];
+        this.radius2 = arguments[6];
+    }
+    else if (type == "RotateBox") { // OBB
+        if (arguments.length != 6)
+            return;
+        this.x1 = arguments[1];
+        this.y1 = arguments[2];
+        this.x2 = arguments[3];
+        this.y2 = arguments[4];
+        this.rotate = arguments[5];
+    }
+    else if (type == "Triangle") {
+        if (arguments.length != 7)
+            return;
+        this.x1 = arguments[1];
+        this.y1 = arguments[2];
+        this.x2 = arguments[3];
+        this.y2 = arguments[4];
+        this.x3 = arguments[5];
+        this.y3 = arguments[6];
+    }
+    else if (type == "Polygon") {
+        if ((7 <= arguments.length) && ((arguments.length % 2) == 1))
+            return;
+        this.points = [];
+        var i = 1, len = arguments.length - 1;
+
+        while (i < len) {
+            this.points.push({ x: arguments[i], y: arguments[i + 1]});
+            i += 2;
+        }
+    }
+    else
+        return
+
+    this.valid = true;
 }

@@ -128,6 +128,7 @@ function ObjectPreset() {
         relative = typeof relative !== 'undefined' ? relative : false;
         scaleY = typeof scaleY !== 'undefined' ? scaleY : scaleX;
         applyChilds = typeof applyChilds !== 'undefined' ? applyChilds : true;
+        
         if (relative) {
             this.scale.x += scaleX;
             this.scale.y += scaleY;
