@@ -121,12 +121,21 @@ function ObjectPreset() {
             this.angle = angle;
         this.angle %= 360;
     }
-    this.setScale = function (scale, relative) {
+    this.setScale = function (scale, relative, applyChilds) {
         relative = typeof relative !== 'undefined' ? relative : false;
+        applyChilds = typeof applyChilds !== 'undefined' ? applyChilds : true;
         if (relative)
             this.scale += scale;
         else
             this.scale = scale;
+        if (applyChilds) {
+            var childs = this.childs;
+            var i = 0, len = childs.length;
+            while (i < len) {
+                childs[i].setScale(scale, relative, applyChilds);
+                i += 1;
+            }
+        }
     }
     this.setAlpha = function (alpha, relative) {
         relative = typeof relative !== 'undefined' ? relative : false;

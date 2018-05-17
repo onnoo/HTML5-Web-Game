@@ -32,7 +32,7 @@ function TestRoom() {
         o = newObject(Ship);
         this.object_m.addObject(o);
         o.playerControl = true;
-        //o.setScale(0.5);
+        o.setScale(1.5);
         v.setTarget(o);
 
         o = newObject(Ship);
