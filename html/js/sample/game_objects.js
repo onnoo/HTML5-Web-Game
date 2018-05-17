@@ -353,7 +353,7 @@ function HitEffect() {
 
 function ExplosionEffect() {
     this.depth = 15;
-    this.scale = 1.5;
+    this.scale = {x: 1.5, y:1.5};
     var view;
     var frameSpeed = 60;
     var animFrame = 0;

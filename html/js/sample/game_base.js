@@ -2,7 +2,10 @@ function ObjectPreset() {
     this.x = 0;
     this.y = 0;
     this.angle = 0;
-    this.scale = 1;
+    this.scale = {
+        x: 1,
+        y: 1
+    };
     this.sprite = {
         image: null,
         x: 0,
@@ -121,18 +124,23 @@ function ObjectPreset() {
             this.angle = angle;
         this.angle %= 360;
     }
-    this.setScale = function (scale, relative, applyChilds) {
+    this.setScale = function (scaleX, scaleY, relative, applyChilds) {
         relative = typeof relative !== 'undefined' ? relative : false;
+        scaleY = typeof scaleY !== 'undefined' ? scaleY : scaleX;
         applyChilds = typeof applyChilds !== 'undefined' ? applyChilds : true;
-        if (relative)
-            this.scale += scale;
-        else
-            this.scale = scale;
+        if (relative) {
+            this.scale.x += scaleX;
+            this.scale.y += scaleY;
+        }
+        else {
+            this.scale.x = scaleX;
+            this.scale.y = scaleY;
+        }
         if (applyChilds) {
             var childs = this.childs;
             var i = 0, len = childs.length;
             while (i < len) {
-                childs[i].setScale(scale, relative, applyChilds);
+                childs[i].setScale(scaleX, scaleY, relative, applyChilds);
                 i += 1;
             }
         }
@@ -240,11 +248,11 @@ function ObjectPreset() {
     }
 
     this.getOffsetPos = function (x, y) {
-        return rotationPos(0, 0, x * this.scale, y * this.scale, this.angle);
+        return rotationPos(0, 0, x * this.scale.x, y * this.scale.y, this.angle);
     }
 
     this.getOffsetSpritePos = function (x, y) {
-        return rotationPos(0, 0, (x - this.sprite.centerX) * this.scale, (y - this.sprite.centerY) * this.scale, this.angle);
+        return rotationPos(0, 0, (x - this.sprite.centerX) * this.scale.x, (y - this.sprite.centerY) * this.scale.y, this.angle);
     }
 
     this.drawSprite = function (context) {
@@ -259,10 +267,10 @@ function ObjectPreset() {
                     this.sprite.y + (this.sprite.cellHeight * this.sprite.imageSet),
                     this.sprite.cellWidth,
                     this.sprite.cellHeight,
-                    this.sprite.cellWidth * this.scale / view.zoom,
-                    this.sprite.cellHeight * this.scale / view.zoom,
-                    this.sprite.centerX * this.scale / view.zoom,
-                    this.sprite.centerY * this.scale / view.zoom,
+                    this.sprite.cellWidth * this.scale.x / view.zoom,
+                    this.sprite.cellHeight * this.scale.y / view.zoom,
+                    this.sprite.centerX * this.scale.x / view.zoom,
+                    this.sprite.centerY * this.scale.y / view.zoom,
                     this.angle,
                     this.sprite.alpha);
         }
