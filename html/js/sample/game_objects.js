@@ -124,14 +124,7 @@ function Ship() {
             if ((targetX != -1) || (targetY != -1) && ((this.x != targetX) || (this.y != targetY))) {
                 var contextPos = view.roomToContextPos(this.x, this.y);
                 var contextTragetPos = view.roomToContextPos(targetX, targetY);
-                context.beginPath();
-                context.strokeStyle = '#00FF00';
-                context.setLineDash([5, 15]);
-                //context.moveTo(viewPos.x, viewPos.y);
-                //context.lineTo(viewTragetPos.x, viewTragetPos.y);
-                context.moveTo(contextTragetPos.x, contextTragetPos.y);
-                context.lineTo(contextPos.x, contextPos.y);
-                context.stroke();
+                drawLine(context, contextTragetPos.x, contextTragetPos.y, contextPos.x, contextPos.y, "#00FF00", [5, 15])
             }
         }
         this.drawSprite(context);
@@ -139,30 +132,23 @@ function Ship() {
         if (drawCollisionSet) {
             var len = this.collisionSet.length;
             var i = 0;
+            var lineColor = "#FF0000"
 
-            context.setLineDash([]);
             if (0 < this.collidedObjects.length) {
                 var contextIPointPos = view.roomToContextPos(this.collidedObjects[0].iPoint.x, this.collidedObjects[0].iPoint.y);
-                context.beginPath();
-                context.strokeStyle = '#FF0000';
-                context.arc(contextIPointPos.x, contextIPointPos.y, 5, 0, 2 * Math.PI);
-                context.fillStyle = 'green';
-                context.fill();
-                context.stroke();
+                drawCircle(context, contextIPointPos.x, contextIPointPos.y, 5, '#FF0000', 'green')
             }
             else
-                context.strokeStyle = '#00FF00';
-            context.beginPath();
+                lineColor = '#00FF00';
+                
             while (i < len) {
                 var aPos = this.getOffsetSpritePos(this.collisionSet[i][0].x, this.collisionSet[i][0].y);
                 var bPos = this.getOffsetSpritePos(this.collisionSet[i][1].x, this.collisionSet[i][1].y);
                 var contextAPos = view.roomToContextPos(this.x + aPos.x, this.y + aPos.y);
                 var contextBPos = view.roomToContextPos(this.x + bPos.x, this.y + bPos.y);
-                context.moveTo(contextAPos.x, contextAPos.y);
-                context.lineTo(contextBPos.x, contextBPos.y);
+                drawLine(context, contextAPos.x, contextAPos.y, contextBPos.x, contextBPos.y, lineColor)
                 i += 1;
             }
-            context.stroke();
             this.collidedObjects = [];
         }
         this.drawHpBar(context);
@@ -176,14 +162,10 @@ function Ship() {
         var hpBarWidth = hp / view.zoom;
         var hpBarHeight = 6 / view.zoom;
 
-        context.beginPath();
         context.globalAlpha = 0.2;
-        context.fillStyle = '#FFFFFF';
-        context.fillRect(hpBarX - 2, hpBarY - 2, maxHpBarWidth + 4, hpBarHeight + 4);
+        drawRect(context, hpBarX - 2, hpBarY - 2, maxHpBarWidth + 4, hpBarHeight + 4, null, '#FFFFFF', true)
         context.globalAlpha = 1;
-        context.fillStyle = '#00FF00';
-        context.fillRect(hpBarX, hpBarY, hpBarWidth, hpBarHeight);
-        context.stroke();
+        drawRect(context, hpBarX, hpBarY, hpBarWidth, hpBarHeight, null, '#00FF00', true)
     };
 
     this.takeDamage = function (damage) {
@@ -319,11 +301,7 @@ function CursorClickEffect() {
 
     this.draw = function (context) {
         var contextPos = view.roomToContextPos(this.x, this.y);
-        context.beginPath();
-        context.strokeStyle = '#00FF00';
-        context.setLineDash([]);
-        context.arc(contextPos.x, contextPos.y, circleSize, 0, 2 * Math.PI);
-        context.stroke();
+        drawCircle(context, contextPos.x, contextPos.y, circleSize, '#00FF00')
     };
 }
 
@@ -345,11 +323,7 @@ function BoosterEffect() {
 
     this.draw = function (context) {
         var contextPos = view.roomToContextPos(this.x, this.y);
-        context.beginPath();
-        context.strokeStyle = '#0000FF';
-        context.setLineDash([]);
-        context.arc(contextPos.x, contextPos.y, circleSize / view.zoom, 0, 2 * Math.PI);
-        context.stroke();
+        drawCircle(context, contextPos.x, contextPos.y, circleSize / view.zoom, '#0000FF')
     };
 }
 
@@ -373,11 +347,7 @@ function HitEffect() {
 
     this.draw = function (context) {
         var contextPos = view.roomToContextPos(this.x, this.y);
-        context.beginPath();
-        context.strokeStyle = '#FF0000';
-        context.setLineDash([]);
-        context.arc(contextPos.x, contextPos.y, circleSize / view.zoom, 0, 2 * Math.PI);
-        context.stroke();
+        drawCircle(context, contextPos.x, contextPos.y, circleSize / view.zoom, '#FF0000')
     };
 }
 
