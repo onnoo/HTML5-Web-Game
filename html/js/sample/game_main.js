@@ -22,7 +22,7 @@ function game_main() {
     //     e.preventDefault();
     // });
     window.addEventListener('resize', resizeCanvas);
-
+    
     resizeCanvas();
     window.scrollTo(0, 1);
 }
