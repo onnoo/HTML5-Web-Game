@@ -2,7 +2,10 @@ function ObjectPreset() {
     this.x = 0;
     this.y = 0;
     this.angle = 0;
-    this.scale = 1;
+    this.scale = {
+        x: 1,
+        y: 1
+    };
     this.sprite = {
         image: null,
         x: 0,
@@ -23,10 +26,13 @@ function ObjectPreset() {
     this.class = "";
     this.name = "";
     this.manager = null;
+    this.room = null; // no setter
     this.gameObject = null;
     this.solid = false;
     this.collisionSet = [];
     this.collidedObjects = [];
+    this.parent = null;
+    this.childs = [];
 
     this.getX = function () {
         return this.x;
@@ -70,8 +76,23 @@ function ObjectPreset() {
     this.getManager = function () {
         return this.manager;
     }
+    this.getRoom = function () {
+        return this.room;
+    }
     this.getGameObject = function () {
         return this.gameObject;
+    }
+    this.isSolid = function () {
+        return this.solid;
+    }
+    this.getCollisionSet = function () {
+        return this.collisionSet;
+    }
+    this.getParent = function () {
+        return this.parent;
+    }
+    this.getChilds = function () {
+        return this.childs;
     }
 
     this.setX = function (x, relative) {
@@ -107,12 +128,27 @@ function ObjectPreset() {
             this.angle = angle;
         this.angle %= 360;
     }
-    this.setScale = function (scale, relative) {
+    this.setScale = function (scaleX, scaleY, relative, applyChilds) {
         relative = typeof relative !== 'undefined' ? relative : false;
-        if (relative)
-            this.scale += scale;
-        else
-            this.scale = scale;
+        scaleY = typeof scaleY !== 'undefined' ? scaleY : scaleX;
+        applyChilds = typeof applyChilds !== 'undefined' ? applyChilds : true;
+
+        if (relative) {
+            this.scale.x += scaleX;
+            this.scale.y += scaleY;
+        }
+        else {
+            this.scale.x = scaleX;
+            this.scale.y = scaleY;
+        }
+        if (applyChilds) {
+            var childs = this.childs;
+            var i = 0, len = childs.length;
+            while (i < len) {
+                childs[i].setScale(scaleX, scaleY, relative, applyChilds);
+                i += 1;
+            }
+        }
     }
     this.setAlpha = function (alpha, relative) {
         relative = typeof relative !== 'undefined' ? relative : false;
@@ -178,17 +214,52 @@ function ObjectPreset() {
     }
     this.setManager = function (manager) {
         this.manager = manager;
+        this.room = manager.room;
+        this.view = this.room.view;
     }
     this.setGameObject = function (gameObject) {
         this.gameObject = gameObject;
     }
+    this.setSolid = function (solid) {
+        this.solid = solid;
+    }
+    this.setCollisionSet = function (collisionSet) {
+        return this.collisionSet = collisionSet;
+    }
+    this.setParent = function (parent) {
+        return this.parent = parent;
+    }
+    this.setChilds = function (childs) {
+        var i = 0, len = childs.length;
+        while (i < len) {
+            childs[i].parent = this;
+            i += 1;
+        }
+        return this.childs = childs;
+    }
+    this.addChild = function (child) {
+        this.manager.addObject(child);
+        child.parent = this;
+        return this.childs.push(child);
+    }
+    this.removeChild = function (child) {
+        var i = 0, len = childs.length;
+        while (i < len) {
+            if (childs[i] === child) {
+                childs.splice(i, 1);
+                return child;
+            }
+            i += 1;
+        }
+        return null;
+    }
 
     this.getOffsetPos = function (x, y) {
-        return rotationPos(0, 0, x * this.scale, y * this.scale, this.angle);
+        return rotationPos(0, 0, x * this.scale.x, y * this.scale.y, this.angle);
     }
 
     this.getOffsetSpritePos = function (x, y) {
-        return rotationPos(0, 0, (x - (this.sprite.cellWidth / 2)) * this.scale, (y - (this.sprite.cellHeight / 2)) * this.scale, this.angle);
+        return rotationPos(0, 0, (x - this.sprite.centerX) * this.scale.x, (y - this.sprite.centerY) * this.scale.y, this.angle);
     }
 
     this.drawSprite = function (context) {
@@ -197,16 +268,16 @@ function ObjectPreset() {
             if (view.insideSprite(this))
                 drawImageEx(context,
                     this.sprite.image,
-                    view.roomToViewX(this.x),// - (this.sprite.centerX * this.scale)
-                    view.roomToViewY(this.y),// - (this.sprite.centerY * this.scale)
+                    view.roomToContextX(this.x),// - (this.sprite.centerX * this.scale)
+                    view.roomToContextY(this.y),// - (this.sprite.centerY * this.scale)
                     this.sprite.x + (this.sprite.cellWidth * this.sprite.frame),
                     this.sprite.y + (this.sprite.cellHeight * this.sprite.imageSet),
                     this.sprite.cellWidth,
                     this.sprite.cellHeight,
-                    this.sprite.cellWidth * this.scale,
-                    this.sprite.cellHeight * this.scale,
-                    this.sprite.centerX * this.scale,
-                    this.sprite.centerY * this.scale,
+                    this.sprite.cellWidth * this.scale.x / view.zoom,
+                    this.sprite.cellHeight * this.scale.y / view.zoom,
+                    this.sprite.centerX * this.scale.x / view.zoom,
+                    this.sprite.centerY * this.scale.y / view.zoom,
                     this.angle,
                     this.sprite.alpha);
         }
@@ -243,6 +314,7 @@ function RoomPreset() {
     this.gameObject = null;
     this.view = null;
     this.name = "";
+    this.gravity = 0;
 
     this.init = function () { }
 
@@ -267,6 +339,9 @@ function RoomPreset() {
     this.getName = function () {
         return this.name;
     }
+    this.getGravity = function () {
+        return this.gravity;
+    }
 
     this.setWidth = function (width) {
         this.width = width;
@@ -287,6 +362,9 @@ function RoomPreset() {
     }
     this.setName = function (name) {
         this.name = name;
+    }
+    this.setGravuty = function (gravity) {
+        this.gravity = gravity;
     }
 
     this.destructor = function () { }
@@ -477,9 +555,6 @@ function ObjectManager(gameObject) {
         if (objectList.indexOf(object) != -1)
             return false;
 
-        object.setManager(this);
-        object.setGameObject(this.gameObject);
-        object.init();
         objectList.push(object);
         return true;
     };
@@ -488,6 +563,9 @@ function ObjectManager(gameObject) {
         if (objectList.indexOf(object) != -1)
             return false;
 
+        object.setManager(this);
+        object.setGameObject(this.gameObject);
+        object.init();
         addObjectList.push(object);
         return true;
     };
@@ -602,11 +680,16 @@ function RoomManager(gameObject) {
     };
 }
 
-function InputManager(target) {
+function InputManager(gameObject, target) {
     target = typeof target !== 'undefined' ? target : window;
+    this.gameObject = gameObject;
     this.keyStates = {};
     this.mouseStates = {};
-    this.mousePos = {
+    this.canvasMousePos = {
+        x: 0,
+        y: 0
+    };
+    this.contextMousePos = {
         x: 0,
         y: 0
     };
@@ -614,26 +697,36 @@ function InputManager(target) {
         x: 0,
         y: 0
     };
+    var target = target;
+    var view;
     var asynKeyStates = {};
     var asynMouseStates = {};
-    var asynMousePos = {
+    var asynCanvasMousePos = {
         x: 0,
         y: 0
     };
-    var target = target;
+    var canvasContextRatioX = 1;
+    var canvasContextRatioY = 1;
 
     this.update = function () {
         this.keyStates = cloneObject(asynKeyStates);
         this.mouseStates = cloneObject(asynMouseStates);
-        this.mousePos = cloneObject(asynMousePos);
+        this.canvasMousePos = cloneObject(asynCanvasMousePos);
+        view = this.gameObject.room.view;
 
+        canvasContextRatioX = target.width / target.offsetWidth;
+        canvasContextRatioY = target.height / target.offsetHeight;
 
-        var ratioX = target.width / target.offsetWidth;
-        var ratioY = target.height / target.offsetHeight;
-        this.viewMousePos.x = target.offsetLeft <= this.mousePos.x ? (this.mousePos.x - target.offsetLeft) * ratioX : 0;
-        this.viewMousePos.y = target.offsetTop <= this.mousePos.y ? (this.mousePos.y - target.offsetTop) * ratioY : 0;
+        contextViewRatioX = view.width / target.width;
+        contextViewRatioY = view.height / target.height;
+
+        this.contextMousePos.x = this.canvasMousePos.x * canvasContextRatioX;
+        this.contextMousePos.y = this.canvasMousePos.y * canvasContextRatioY;
+
+        this.viewMousePos.x = this.contextMousePos.x * contextViewRatioX;
+        this.viewMousePos.y = this.contextMousePos.y * contextViewRatioY;
     };
-
+    
     this.getKeyState = function (key) {
         return this.keyStates.hasOwnProperty(key) ? this.keyStates[key] : 0;
     };
@@ -642,24 +735,16 @@ function InputManager(target) {
         return this.mouseStates.hasOwnProperty(mouse) ? this.mouseStates[mouse] : 0;
     };
 
-    this.getViewMousePos = function () {
-        var ratioX = target.width / target.offsetWidth;
-        var ratioY = target.height / target.offsetHeight;
-        return {
-            x: target.offsetLeft <= this.mousePos.x ? (this.mousePos.x - target.offsetLeft) * ratioX : 0,
-            y: target.offsetTop <= this.mousePos.y ? (this.mousePos.y - target.offsetTop) * ratioY : 0
-        };
-    };
-
     this.getCanvasMousePos = function () {
-        return {
-            x: target.offsetLeft <= this.mousePos.x ? this.mousePos.x - target.offsetLeft : 0,
-            y: target.offsetTop <= this.mousePos.y ? this.mousePos.y - target.offsetTop : 0
-        };
+        return this.canvasMousePos;
     };
 
-    this.getRealMousePos = function () {
-        return this.MousePos;
+    this.getContextMousePos = function () {
+        return this.contextMousePos;
+    };
+
+    this.getViewMousePos = function () {
+        return this.viewMousePos;
     };
 
     target.addEventListener('keyup', function (e) {
@@ -671,14 +756,21 @@ function InputManager(target) {
         e.preventDefault();
     });
     target.addEventListener('mousemove', function (e) {
-        asynMousePos.x = e.clientX;
-        asynMousePos.y = e.clientY;
+        asynCanvasMousePos.x = e.offsetX;
+        asynCanvasMousePos.y = e.offsetY;
     });
     target.addEventListener('mousedown', function (e) {
         asynMouseStates[e.button] = 1;
     });
-    target.addEventListener('mouseup', function (e) {
+    // target.addEventListener('mouseup', function (e) {
+    //     asynMouseStates[e.button] = 0;
+    // });
+    window.addEventListener('mouseup', function (e) {
         asynMouseStates[e.button] = 0;
+    });
+    window.addEventListener('mouseout', function(e){
+        if (e.toElement === null)
+            asynMouseStates = {}
     });
 }
 
@@ -687,11 +779,20 @@ function View(width, height) {
     height = typeof height !== 'undefined' ? height : 720;
     this.x = 0;
     this.y = 0;
-    this.width = 1280;
-    this.height = 720;
+    this.baseWidth = width;
+    this.baseHeight = height;
+    this.width = width;
+    this.height = height;
     this.room = null;
     this.target = null;
     this.gameObject = null;
+    this.canvas = null;
+    this.context = null;
+    this.zoom = 1;
+    this.targetZoom = 1;
+    this.zoomSpeed = 5;
+    var viewContextRatioX = 1;
+    var viewContextRatioY = 1;
 
     this.getX = function () {
         return this.x;
@@ -720,7 +821,29 @@ function View(width, height) {
     this.getGmaeObject = function () {
         return this.gameObject;
     }
+    this.getCanvas = function () {
+        return this.canvas;
+    }
+    this.getContext = function () {
+        return this.context;
+    }
+    this.getZoom = function () {
+        return this.zoom;
+    }
+    this.getZoomSpeed = function () {
+        return this.zoomSpeed;
+    }
 
+    this.setX = function (x) {
+        this.x = x;
+    }
+    this.setY = function (y) {
+        this.y = y;
+    }
+    this.setPos = function (x, y) {
+        this.x = x;
+        this.y = y;
+    }
     this.setWidth = function (width) {
         this.width = width;
     }
@@ -735,9 +858,42 @@ function View(width, height) {
     }
     this.setGameObject = function (gameObject) {
         this.gameObject = gameObject;
+        this.canvas = gameObject.canvas;
+        this.context = gameObject.context;
+    }
+    this.setCanvas = function (canvas) {
+        this.canvas = canvas;
+    }
+    this.setContext = function (context) {
+        this.context = context;
+    }
+    this.setZoom = function (zoom) {
+        if (0 < zoom) {
+            this.targetZoom = zoom;
+        }
+    }
+    this.setZoomSpeed = function (speed) {
+        if (0 <= speed)
+            this.zoomSpeed = speed;
     }
 
     this.update = function () {
+        var tickTimeMul = this.gameObject.tickTimeMul;
+        viewContextRatioX = this.canvas.width / this.width;
+        viewContextRatioY = this.canvas.height / this.height;
+
+        if (this.zoom != this.targetZoom) {
+            if (this.zoomSpeed == 0) {
+                this.zoom = this.targetZoom;
+            } else {
+                this.zoom = lerp(this.zoom, this.targetZoom, this.zoomSpeed * tickTimeMul, true);
+                if (diff(this.baseWidth * this.zoom, this.baseWidth * this.targetZoom) < 1)
+                    this.zoom = this.targetZoom;
+            }
+            this.width = this.baseWidth * this.zoom;
+            this.height = this.baseHeight * this.zoom;
+        }
+
         if (this.target != null) {
             this.x = this.target.getX() - (this.width / 2);
             this.y = this.target.getY() - (this.height / 2);
@@ -788,15 +944,41 @@ function View(width, height) {
     }
 
     this.roomToViewX = function (x) {
-        return x - this.x;
+        return (x - this.x) * this.zoom;
     }
     this.roomToViewY = function (y) {
-        return y - this.y;
+        return (y - this.y) * this.zoom;
     }
     this.roomToViewPos = function (x, y) {
         return {
-            x: x - this.x,
-            y: y - this.y
+            x: (x - this.x) * this.zoom,
+            y: (y - this.y) * this.zoom
+        };
+    }
+
+    this.viewToContextX = function (x) {
+        return x * viewContextRatioX;
+    }
+    this.viewToContextY = function (y) {
+        return y * viewContextRatioY;
+    }
+    this.viewToContextPos = function (x, y) {
+        return {
+            x: x * viewContextRatioX,
+            y: y * viewContextRatioY
+        };
+    }
+
+    this.roomToContextX = function (x) {
+        return (x - this.x) * viewContextRatioX;
+    }
+    this.roomToContextY = function (y) {
+        return (y - this.y) * viewContextRatioY;
+    }
+    this.roomToContextPos = function (x, y) {
+        return {
+            x: (x - this.x) * viewContextRatioX,
+            y: (y - this.y) * viewContextRatioY
         };
     }
 }
@@ -805,6 +987,7 @@ function FPSCounter(maxQueued) {
     var maxQueued = maxQueued;
     var fpsQueue = [];
     var averageFPS = 0;
+    var show = true;
 
     this.update = function () {
         var len = fpsQueue.length;
@@ -816,7 +999,17 @@ function FPSCounter(maxQueued) {
         averageFPS = temp / len;
     }
 
+    this.draw = function (context) {
+        if (show) {
+            context.font = "15px Arial";
+            context.fillStyle = "#1EFF1E";
+            context.fillText(averageFPS.toFixed().toString() + "fps", context.canvas.width - 50, 15);
+        }
+    }
+
     this.addFPS = function (fps) {
+        if (fps === Infinity)
+            fps = 999;
         fpsQueue.push(fps);
         if (maxQueued < fpsQueue.length)
             fpsQueue.shift();
@@ -825,21 +1018,30 @@ function FPSCounter(maxQueued) {
     this.getFPS = function () {
         return averageFPS;
     }
+
+    this.showFPS = function (_show) {
+        show = _show;
+    }
 }
 
-function Game(canvas, targetFPS) {
+function Game(canvas, targetFPS, runGame) {
     targetFPS = typeof targetFPS !== 'undefined' ? targetFPS : 60;
+    runGame = typeof runGame !== 'undefined' ? runGame : true;
     this.canvas = canvas;
     this.context = canvas.getContext("2d");
     this.targetFPS = targetFPS;
     this.targetFrameTime = (1000 / this.targetFPS);
+    this.width = canvas.width;
+    this.height = canvas.height;
     this.image_m = new ImageManager();
     this.audio_m = new AudioManager();
     this.object_m = new ObjectManager(this);
     this.room_m = new RoomManager(this);
-    this.input_m = new InputManager(canvas);
+    this.input_m = new InputManager(this, canvas);
     this.nowLoopTime = 0;
     this.lastTickTime = 0;
+    this.tickTime = 0;
+    this.tickTimeMul = 0;
     this.loopCallback = null;
     this.room = null;
     this.fpsCounter = new FPSCounter(10);
@@ -850,8 +1052,12 @@ function Game(canvas, targetFPS) {
     
     this.loadAssets = function () {
         game_assets = typeof game_assets !== 'undefined' ? game_assets : [];
+        var i = 0, len = game_assets.length;
+        var asset;
 
-        for (var asset in game_assets) {
+        while (i < len) {
+            asset = game_assets[i];
+
             if (asset.type == "image") {
                 this.image_m.loadImage(asset.name, asset.src);
             }
@@ -859,8 +1065,10 @@ function Game(canvas, targetFPS) {
                 this.audio_m.loadAudio(asset.name, asset.src);
                 if ("volume" in asset) {
                     this.audio_m.setAudioVolume(asset.name, asset.volume);
+
                 }
             }
+            i += 1;
         }
     }
 
@@ -871,20 +1079,40 @@ function Game(canvas, targetFPS) {
             setTimeout(function () { _this.checkAllAssetsLoaded() }, 100);
     }
 
+    this.gameReady = function () {
+        if (this.room == null) {
+            console.log("ERROR: Room is not set!");
+            return false;
+        }
+        if (this.room.view == null) {
+            console.log("ERROR: View is not set!");
+            return false;
+        }
+
+        console.log("ready!");
+        return true;
+    }
+
     this.init = function () {
         game_rooms = typeof game_rooms !== 'undefined' ? game_rooms : [];
+        var i = 0, len = game_rooms.length;
+        var room;
 
-        for (var room in game_rooms) {
+        while (i < len) {
+            room = game_rooms[i];
             this.room_m.addRoom(room.name, newRoom(room.object));
             if (("default" in room) && room.default) {
                 this.room = this.room_m.getRoom(room.name)
             }
+            i += 1;
         }
 
         this.performProcesss();
 
-        ready = true;
-        console.log("ready!");
+        ready = this.gameReady();
+        if (ready && runGame) {
+            this.run();
+        }
     }
 
     this.getRoom = function () {
@@ -925,15 +1153,15 @@ function Game(canvas, targetFPS) {
         this.nowLoopTime = Date.now();
         deltaTime += (this.nowLoopTime - lastLoopTime);
         if (targetFrameTime <= deltaTime) {
-            this.fpsCounter.addFPS(1000 / (this.nowLoopTime - this.lastTickTime));
-            this.fpsCounter.update();
+            this.tickTime = this.nowLoopTime - this.lastTickTime;
+            this.tickTimeMul = this.tickTime / 1000;
 
-            //var ttt1 = Date.now();
+            // var ttt1 = Date.now();
             this.logic();
-            //var ttt2 = Date.now();
+            // var ttt2 = Date.now();
             this.render();
-            //var ttt3 = Date.now();
-            //console.log("logic: " + (ttt2 - ttt1) + ", render: " + (ttt3 - ttt2));
+            // var ttt3 = Date.now();
+            // console.log("logic: " + (ttt2 - ttt1) + ", render: " + (ttt3 - ttt2));
 
             this.lastTickTime = this.nowLoopTime;
             deltaTime -= targetFrameTime;
@@ -944,102 +1172,198 @@ function Game(canvas, targetFPS) {
         this.loopCallback = setTimeout(function () { _this.loop() }, 0);
     };
 
+    this.objectUpdate = function (obj, func) {
+        if (obj.constructor === Array) {
+            var i = 0, len = obj.length;
+
+            while (i < len) {
+                if (func == -1)
+                    obj[i].preUpdate();
+                else if (func == 1)
+                    obj[i].postUpdate();
+                else 
+                    obj[i].update();
+
+                var childs = obj[i].childs;
+                if (0 < childs.length) {
+                    this.objectUpdate(childs, func);
+                }
+                i += 1;
+            }
+        }
+        else {
+            if (func == -1)
+                obj.preUpdate();
+            else if (func == 1)
+                obj.postUpdate();
+            else 
+                obj.update();
+
+            var childs = obj.childs;
+            if (0 < childs.length) {
+                this.objectUpdate(childs, func);
+            }
+        }
+    }
+
+    this.objectDraw = function (obj, context, func) {
+        if (obj.constructor === Array) {
+            var i = 0, len = obj.length;
+
+            while (i < len) {
+                if (func == -1)
+                    obj[i].preDraw(context);
+                else if (func == 1)
+                    obj[i].postDraw(context);
+                else 
+                    obj[i].draw(context);
+
+                var childs = obj[i].childs;
+                if (0 < childs.length) {
+                    this.objectDraw(childs, context, func);
+                }
+                i += 1;
+            }
+        }
+        else {
+            if (func == -1)
+                obj.preDraw(context);
+            else if (func == 1)
+                obj.postDraw(context);
+            else 
+                obj.draw(context);
+
+            var childs = obj.childs;
+            if (0 < childs.length) {
+                this.objectDraw(childs, context, func);
+            }
+        }
+    }
+
+    this.objectListUpdate = function (objectList, pre, main, post) {
+        pre = typeof pre !== 'undefined' ? pre : false;
+        main = typeof main !== 'undefined' ? main : true;
+        post = typeof post !== 'undefined' ? post : false;
+        var i, len = objectList.length;
+
+        if (pre) {
+            i = 0;
+            while (i < len) {
+                if (objectList[i].parent == null)
+                    this.objectUpdate(objectList[i], -1)
+                i += 1;
+            }
+        }
+        if (main) {
+            i = 0;
+            while (i < len) {
+                if (objectList[i].parent == null)
+                    this.objectUpdate(objectList[i], 0)
+                i += 1;
+            }
+        }
+        if (post) {
+            i = 0;
+            while (i < len) {
+                if (objectList[i].parent == null)
+                    this.objectUpdate(objectList[i], 1)
+                i += 1;
+            }
+        }
+    }
+
+    this.objectListDraw = function (objectList, context, pre, main, post) {
+        pre = typeof pre !== 'undefined' ? pre : false;
+        main = typeof main !== 'undefined' ? main : true;
+        post = typeof post !== 'undefined' ? post : false;
+        var i, len = objectList.length;
+
+        if (pre) {
+            i = 0;
+            while (i < len) {
+                if (objectList[i].visible) {
+                    if (objectList[i].parent == null)
+                        this.objectDraw(objectList[i], context, -1)
+                }
+                i += 1;
+            }
+        }
+        if (main) {
+            i = 0;
+            while (i < len) {
+                if (objectList[i].visible) {
+                    if (objectList[i].parent == null)
+                        this.objectDraw(objectList[i], context, 0)
+                }
+                i += 1;
+            }
+        }
+        if (post) {
+            i = 0;
+            while (i < len) {
+                if (objectList[i].visible) {
+                    if (objectList[i].parent == null)
+                        this.objectDraw(objectList[i], context, 1)
+                }
+                i += 1;
+            }
+        }
+    }
+
+    this.objectListCollisionCheck = function (objectList) {
+        var i, ii, len = objectList.length;
+
+        i = 0;
+        while (i < len) {
+            if (objectList[i].solid) {
+                ii = i + 1;
+                while (ii < len) {
+                    if (objectList[ii].solid)
+                        collisionCheckObjects(objectList[i], objectList[ii]);
+                    ii += 1;
+                }
+            }
+            i += 1;
+        }
+    }
+
     this.logic = function () {
+        this.fpsCounter.addFPS(1000 / this.tickTime);
+        this.fpsCounter.update();
         this.input_m.update();
+
         // Global objects update
         var objectList = this.object_m.getObjectList();
-        var len = objectList.length;
-
-        var i = 0;
-        while (i < len) {
-            objectList[i].preUpdate();
-            i += 1;
-        }
-        i = 0;
-        while (i < len) {
-            objectList[i].update();
-            i += 1;
-        }
-        i = 0;
-        while (i < len) {
-            objectList[i].postUpdate();
-            i += 1;
-        }
+        this.objectListUpdate(objectList)
 
         // Room objects and view update
         if (this.room != null) {
             objectList = this.room.getObjectManager().getObjectList();
-            len = objectList.length;
-
-            i = 0;
-            while (i < len) {
-                objectList[i].preUpdate();
-                i += 1;
-            }
-            i = 0;
-            while (i < len) {
-                objectList[i].update();
-                i += 1;
-            }
-            i = 0;
-            while (i < len) {
-                objectList[i].postUpdate();
-                i += 1;
-            }
+            this.objectListUpdate(objectList)
 
             this.room.getView().update();
         }
-
 
         this.performProcesss();
 
         // Room objects collision check
         if (this.room != null) {
             objectList = this.room.getObjectManager().getObjectList();
-            len = objectList.length;
-
-            i = 0;
-            while (i < len) {
-                if (objectList[i].solid) {
-                    var ii = i + 1;
-                    while (ii < len) {
-                        if (objectList[ii].solid)
-                            collisionCheckObjects(objectList[i], objectList[ii]);
-                        ii += 1;
-                    }
-                }
-                i += 1;
-            }
+            this.objectListCollisionCheck(objectList);
         }
     };
 
     this.render = function () {
         if (document.visibilityState != "visible")
             return;
+
         // Room objects draw
         if (this.room != null) {
             var objectList = this.room.getObjectManager().getObjectList();
-            var len = objectList.length;
-
-            var i = 0;
-            while (i < len) {
-                if (objectList[i].visible)
-                    objectList[i].preDraw(this.context);
-                i += 1;
-            }
-            i = 0;
-            while (i < len) {
-                if (objectList[i].visible)
-                    objectList[i].draw(this.context);
-                i += 1;
-            }
-            i = 0;
-            while (i < len) {
-                if (objectList[i].visible)
-                    objectList[i].postDraw(this.context);
-                i += 1;
-            }
+            this.objectListDraw(objectList, this.context);
         }
+        
+        this.fpsCounter.draw(this.context);
     };
 
     this.performProcesss = function () {
@@ -1060,4 +1384,78 @@ function Game(canvas, targetFPS) {
 
     this.loadAssets();
     this.checkAllAssetsLoaded()
+}
+
+function CollisionMesh(type, args) {
+    this.valid = false;
+    this.type = type;
+    if (typeof type === 'undefined')
+        return;
+    
+    if (type == "Point") {
+        if (arguments.length != 3)
+            return;
+        this.x = arguments[1];
+        this.y = arguments[2];
+    }
+    else if (type == "Segment") {
+        if (arguments.length != 5)
+            return;
+        this.x1 = arguments[1];
+        this.y1 = arguments[2];
+        this.x2 = arguments[3];
+        this.y2 = arguments[4];
+    }
+    else if (type == "Box") { // AABB
+        if (arguments.length != 5)
+            return;
+        this.x1 = arguments[1];
+        this.y1 = arguments[2];
+        this.x2 = arguments[3];
+        this.y2 = arguments[4];
+    }
+    else if (type == "Circle") {
+        if (arguments.length != 7)
+            return;
+        this.x1 = arguments[1];
+        this.y1 = arguments[2];
+        this.radius1 = arguments[3];
+        this.x2 = arguments[4];
+        this.y2 = arguments[5];
+        this.radius2 = arguments[6];
+    }
+    else if (type == "RotateBox") { // OBB
+        if (arguments.length != 6)
+            return;
+        this.x1 = arguments[1];
+        this.y1 = arguments[2];
+        this.x2 = arguments[3];
+        this.y2 = arguments[4];
+        this.rotate = arguments[5];
+    }
+    else if (type == "Triangle") {
+        if (arguments.length != 7)
+            return;
+        this.x1 = arguments[1];
+        this.y1 = arguments[2];
+        this.x2 = arguments[3];
+        this.y2 = arguments[4];
+        this.x3 = arguments[5];
+        this.y3 = arguments[6];
+    }
+    else if (type == "Polygon") {
+        if ((7 <= arguments.length) && ((arguments.length % 2) == 1))
+            return;
+        this.points = [];
+        var i = 1, len = arguments.length - 1;
+
+        while (i < len) {
+            this.points.push({ x: arguments[i], y: arguments[i + 1]});
+            i += 2;
+        }
+    }
+    else
+        return
+
+    this.valid = true;
 }

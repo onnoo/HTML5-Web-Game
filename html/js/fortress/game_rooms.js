@@ -14,6 +14,10 @@ var game_rooms = [
 
 
 function TestRoom() {
+    this.width = 1000;
+    this.height = 1000;
+    this.gravity = 2000;
+
     this.init = function () {
         var v;
         var o;
@@ -29,19 +33,15 @@ function TestRoom() {
         o = newObject(Background);
         this.object_m.addObject(o);
 
-        o = newObject(Ship);
+        o = newObject(Land);
         this.object_m.addObject(o);
+
+        o = newObject(Tank);
+        this.object_m.addObject(o);
+        o.setPos(100,100);
         o.playerControl = true;
-        o.setScale(1.5);
-        v.setTarget(o);
-
-        o = newObject(Ship);
-        this.object_m.addObject(o);
-        o.setPos(300, 300);
-
-        o = newObject(Cursor);
-        this.object_m.addObject(o);
-
+        v.setTarget(o)
+        
         // for (var i = 0; i < 1000; i += 1) {
         //    var o = newObject(Dummy);
         //    this.object_m.addObject(o);

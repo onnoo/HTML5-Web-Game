@@ -1,39 +1,40 @@
 function Background() {
     this.depth = -1000;
-    var fpsElement;
     var view;
     var image;
 
     this.init = function () {
-        fpsElement = document.getElementById("fps");
-        view = this.manager.room.view;
+        view = this.room.view;
         image = this.gameObject.image_m.getImage("background_stars");
     }
 
-    this.update = function () {
-        fpsElement.innerHTML = this.gameObject.fpsCounter.getFPS().toFixed(0);
-    };
+    this.update = function () { };
 
     this.draw = function (context) {
+        var contextWidth = context.canvas.width;
+        var contextHeight = context.canvas.height;
+
         var imageWidth = image.width / view.zoom;
         var imageHeight = image.height / view.zoom;
 
         var offsetX = (view.x % image.width);
         var offsetY = (view.y % image.height);
-        var drawPos = view.viewToContextPos(-offsetX, -offsetY);
-        var drawX = drawPos.x;
-        var drawY = drawPos.y;
-        context.fillStyle = "#030303";
-        context.fillRect(0, 0, context.canvas.width, context.canvas.height);
-        
-        while (drawY < view.height) {
-            drawX = drawPos.x;
-            while (drawX < view.width) {
+        var contextPos = view.viewToContextPos(-offsetX, -offsetY);
+        var drawX = contextPos.x;
+        var drawY = contextPos.y;
+
+        drawRect(context, 0, 0, contextWidth, contextHeight, null, "#030303", true);
+
+        var roomEndPos = view.roomToContextPos(this.room.width, this.room.height);
+        while (drawY < Math.min(contextHeight, roomEndPos.y)) {
+            drawX = contextPos.x;
+            while (drawX < Math.min(contextWidth, roomEndPos.x)) {
                 context.drawImage(image, drawX, drawY, imageWidth, imageHeight);
                 drawX += imageWidth;
             }
             drawY += imageHeight;
         }
+        this.debug = false;
     };
 }
 
@@ -58,10 +59,10 @@ function Ship() {
         this.setSpriteCenter(73, 43);
 
         input_m = this.gameObject.input_m;
-        view = this.manager.room.view;
+        view = this.room.view;
 
         gun = newObject(Gun);
-        this.manager.addObject(gun);
+        this.addChild(gun);
         gun.setShip(this);
         gun.setPos(this.x, this.y);
         gun.setDepth(this.depth + 1);
@@ -70,7 +71,7 @@ function Ship() {
     }
 
     this.update = function () {
-        var tickTimeMul = (this.gameObject.nowLoopTime - this.gameObject.lastTickTime) / 1000;
+        var tickTimeMul = this.gameObject.tickTimeMul;
         if (this.playerControl) {
             if (input_m.getMouseState(2) == 1) {
                 var roomMousePos = view.viewToRoomPos(input_m.viewMousePos.x, input_m.viewMousePos.y);
@@ -83,7 +84,7 @@ function Ship() {
             var targetDistance = getDistance(this.x, this.y, targetX, targetY);
             var targetAngle = getAngle(this.x, this.y, targetX, targetY);
             if (speed * tickTimeMul < targetDistance) {
-                var targetMovePos = angleDistanceToPos(targetAngle, speed * tickTimeMul)
+                var targetMovePos = angleDistanceToPos(targetAngle, speed * tickTimeMul);
                 this.x += targetMovePos.x;
                 this.y += targetMovePos.y;
             }
@@ -95,7 +96,8 @@ function Ship() {
 
             BoosterEffectDeltaTime += BoosterEffectFrequency * tickTimeMul;
             if (1 <= BoosterEffectDeltaTime) {
-                var boosterPos = angleDistanceToPos(this.angle - 180, 60);
+                //var boosterPos = angleDistanceToPos(this.angle - 180, 60);
+                var boosterPos = this.getOffsetSpritePos(13, 43);
                 var o = newObject(BoosterEffect);
                 this.manager.addObject(o);
                 o.setPos(this.x + boosterPos.x, this.y + boosterPos.y);
@@ -103,68 +105,66 @@ function Ship() {
                 BoosterEffectDeltaTime -= 1;
             }
         }
+
+        if (this.room.width <= this.x)
+            this.x = room.width - 1;
+        else if (this.x < 0)
+            this.x = 0;
+        if (this.room.height <= this.y)
+            this.y = this.room.height - 1;
+        else if (this.y < 0)
+            this.y = 0;
     };
 
     this.draw = function (context) {
-        var drawTargetPath = false;
+        var drawTargetPath = true;
         if (drawTargetPath) {
             if ((targetX != -1) || (targetY != -1) && ((this.x != targetX) || (this.y != targetY))) {
-                var viewPos = view.roomToViewPos(this.x, this.y);
-                var viewTragetPos = view.roomToViewPos(targetX, targetY);
-                context.beginPath();
-                context.strokeStyle = '#00FF00';
-                context.setLineDash([5, 15]);
-                //context.moveTo(viewPos.x, viewPos.y);
-                //context.lineTo(viewTragetPos.x, viewTragetPos.y);
-                context.moveTo(viewTragetPos.x, viewTragetPos.y);
-                context.lineTo(viewPos.x, viewPos.y);
-                context.stroke();
+                var contextPos = view.roomToContextPos(this.x, this.y);
+                var contextTragetPos = view.roomToContextPos(targetX, targetY);
+                drawLine(context, contextTragetPos.x, contextTragetPos.y, contextPos.x, contextPos.y, "#00FF00", [5, 15])
             }
         }
         this.drawSprite(context);
-        var drawCollisionSet = false;
+        var drawCollisionSet = true;
         if (drawCollisionSet) {
-            var viewPos = view.roomToViewPos(this.x, this.y);
             var len = this.collisionSet.length;
             var i = 0;
+            var lineColor = "#FF0000"
 
-            context.setLineDash([]);
             if (0 < this.collidedObjects.length) {
-                var viewIPointPos = view.roomToViewPos(this.collidedObjects[0].iPoint.x, this.collidedObjects[0].iPoint.y);
-                context.beginPath();
-                context.strokeStyle = '#FF0000';
-                context.arc(viewIPointPos.x, viewIPointPos.y, 5, 0, 2 * Math.PI);
-                context.fillStyle = 'green';
-                context.fill();
-                context.stroke();
+                var contextIPointPos = view.roomToContextPos(this.collidedObjects[0].iPoint.x, this.collidedObjects[0].iPoint.y);
+                drawCircle(context, contextIPointPos.x, contextIPointPos.y, 5, '#FF0000', 'green')
             }
             else
-                context.strokeStyle = '#00FF00';
-            context.beginPath();
+                lineColor = '#00FF00';
+                
             while (i < len) {
                 var aPos = this.getOffsetSpritePos(this.collisionSet[i][0].x, this.collisionSet[i][0].y);
                 var bPos = this.getOffsetSpritePos(this.collisionSet[i][1].x, this.collisionSet[i][1].y);
-                context.moveTo(viewPos.x + aPos.x, viewPos.y + aPos.y);
-                context.lineTo(viewPos.x + bPos.x, viewPos.y + bPos.y);
+                var contextAPos = view.roomToContextPos(this.x + aPos.x, this.y + aPos.y);
+                var contextBPos = view.roomToContextPos(this.x + bPos.x, this.y + bPos.y);
+                drawLine(context, contextAPos.x, contextAPos.y, contextBPos.x, contextBPos.y, lineColor)
                 i += 1;
             }
-            context.stroke();
             this.collidedObjects = [];
         }
-
+        this.drawHpBar(context);
     };
 
-    this.postDraw = function (context) {
+    this.drawHpBar = function (context) {
         var contextMousePos = view.roomToContextPos(this.x, this.y);
-        context.beginPath();
+        var hpBarX = contextMousePos.x - ((maxHP / 2) / view.zoom);
+        var hpBarY = contextMousePos.y + (70 / view.zoom);
+        var maxHpBarWidth = maxHP / view.zoom;
+        var hpBarWidth = hp / view.zoom;
+        var hpBarHeight = 6 / view.zoom;
+
         context.globalAlpha = 0.2;
-        context.fillStyle = '#FFFFFF';
-        context.fillRect(contextMousePos.x - (maxHP / 2) - 2, contextMousePos.y + 68, maxHP + 4, 10);
+        drawRect(context, hpBarX - 2, hpBarY - 2, maxHpBarWidth + 4, hpBarHeight + 4, null, '#FFFFFF', true)
         context.globalAlpha = 1;
-        context.fillStyle = '#00FF00';
-        context.fillRect(contextMousePos.x - (maxHP / 2), contextMousePos.y + 70, hp, 6);
-        context.stroke();
-    }
+        drawRect(context, hpBarX, hpBarY, hpBarWidth, hpBarHeight, null, '#00FF00', true)
+    };
 
     this.takeDamage = function (damage) {
         hp -= damage;
@@ -194,7 +194,7 @@ function Gun() {
         this.setSpriteCenter(23, 11);
 
         input_m = this.gameObject.input_m;
-        view = this.manager.room.view;
+        view = this.room.view;
     }
 
     this.getShip = function () {
@@ -204,29 +204,37 @@ function Gun() {
         ship = _ship;
     }
 
+    this.canFire = function () {
+        return nextFire <= this.gameObject.nowLoopTime
+    }
+
+    this.fire = function () {
+        var offsetPos = this.getOffsetSpritePos(58, 11);
+        var firedPos = { x: this.x + offsetPos.x, y: this.y + offsetPos.y };
+
+        var bullet = newObject(Bullet);
+        this.manager.addObject(bullet);
+        bullet.setShip(ship);
+        bullet.setPos(firedPos.x, firedPos.y);
+        bullet.setAngle(this.angle);
+        bullet.firedPos = firedPos
+
+        this.gameObject.audio_m.addPlayQueue("laser");
+
+        nextFire = this.gameObject.nowLoopTime + (1000 / fireRate);
+    }
+
     this.update = function () {
+        var offsetPos = ship.getOffsetSpritePos(60, 43);
+        this.x = ship.x + offsetPos.x;
+        this.y = ship.y + offsetPos.y;
         if (ship.playerControl) {
             var roomMousePos = view.viewToRoomPos(input_m.viewMousePos.x, input_m.viewMousePos.y);
-            var offsetPos = ship.getOffsetSpritePos(60, 43);
-            this.x = ship.x + offsetPos.x;
-            this.y = ship.y + offsetPos.y;
             this.angle = getAngle(this.x, this.y, roomMousePos.x, roomMousePos.y);
 
             if (input_m.getMouseState(0) == 1) {
-                if (nextFire <= this.gameObject.nowLoopTime) {
-                    offsetPos = this.getOffsetSpritePos(58, 11);
-                    var firedPos = { x: this.x + offsetPos.x, y: this.y + offsetPos.y };
-                    var b = newObject(Bullet);
-                    this.manager.addObject(b);
-                    b.setShip(ship);
-                    b.setPos(firedPos.x, firedPos.y);
-                    b.setAngle(this.angle);
-                    b.firedPos = firedPos
-
-                    this.gameObject.audio_m.addPlayQueue("laser");
-
-                    nextFire = this.gameObject.nowLoopTime + (1000 / fireRate);
-                }
+                if (this.canFire())
+                    this.fire();
             }
         }
     };
@@ -246,7 +254,7 @@ function Cursor() {
 
     this.init = function () {
         input_m = this.gameObject.input_m;
-        view = this.manager.room.view;
+        view = this.room.view;
         //image = this.gameObject.image_m.getImage("cursor");
         image = this.gameObject.image_m.getImage("crosshair");
     };
@@ -279,11 +287,11 @@ function CursorClickEffect() {
     var speed = 35;
 
     this.init = function () {
-        view = this.manager.room.view;
+        view = this.room.view;
     }
 
     this.update = function () {
-        var tickTimeMul = (this.gameObject.nowLoopTime - this.gameObject.lastTickTime) / 1000;
+        var tickTimeMul = this.gameObject.tickTimeMul;
         circleSize -= speed * tickTimeMul;
         if (circleSize < 0)
             this.destroySelf();
@@ -291,11 +299,7 @@ function CursorClickEffect() {
 
     this.draw = function (context) {
         var contextPos = view.roomToContextPos(this.x, this.y);
-        context.beginPath();
-        context.strokeStyle = '#00FF00';
-        context.setLineDash([]);
-        context.arc(contextPos.x, contextPos.y, circleSize, 0, 2 * Math.PI);
-        context.stroke();
+        drawCircle(context, contextPos.x, contextPos.y, circleSize, '#00FF00')
     };
 }
 
@@ -305,11 +309,11 @@ function BoosterEffect() {
     var speed = 15;
 
     this.init = function () {
-        view = this.manager.room.view;
+        view = this.room.view;
     }
 
     this.update = function () {
-        var tickTimeMul = (this.gameObject.nowLoopTime - this.gameObject.lastTickTime) / 1000;
+        var tickTimeMul = this.gameObject.tickTimeMul;
         circleSize -= speed * tickTimeMul;
         if (circleSize < 0)
             this.destroySelf();
@@ -317,11 +321,7 @@ function BoosterEffect() {
 
     this.draw = function (context) {
         var contextPos = view.roomToContextPos(this.x, this.y);
-        context.beginPath();
-        context.strokeStyle = '#0000FF';
-        context.setLineDash([]);
-        context.arc(contextPos.x, contextPos.y, circleSize, 0, 2 * Math.PI);
-        context.stroke();
+        drawCircle(context, contextPos.x, contextPos.y, circleSize / view.zoom, '#0000FF')
     };
 }
 
@@ -333,36 +333,32 @@ function HitEffect() {
     var speed = 50;
 
     this.init = function () {
-        view = this.manager.room.view;
+        view = this.room.view;
     }
 
     this.update = function () {
-        var tickTimeMul = (this.gameObject.nowLoopTime - this.gameObject.lastTickTime) / 1000;
+        var tickTimeMul = this.gameObject.tickTimeMul;
         circleSize += speed * tickTimeMul;
         if (circleMaxSize < circleSize)
             this.destroySelf();
     };
 
     this.draw = function (context) {
-        var viewPos = view.roomToViewPos(this.x, this.y);
-        context.beginPath();
-        context.strokeStyle = '#FF0000';
-        context.setLineDash([]);
-        context.arc(viewPos.x, viewPos.y, circleSize, 0, 2 * Math.PI);
-        context.stroke();
+        var contextPos = view.roomToContextPos(this.x, this.y);
+        drawCircle(context, contextPos.x, contextPos.y, circleSize / view.zoom, '#FF0000')
     };
 }
 
 function ExplosionEffect() {
     this.depth = 15;
-    this.scale = 1.5;
+    this.scale = {x: 1.5, y:1.5};
     var view;
     var frameSpeed = 60;
     var animFrame = 0;
     var animMaxFrame = 64;
 
     this.init = function () {
-        view = this.manager.room.view;
+        view = this.room.view;
 
         var image = this.gameObject.image_m.getImage("explosion");
         this.setSprite(image, 0, 0, image.width, image.height, 256, 256, 128, 128);
@@ -370,7 +366,7 @@ function ExplosionEffect() {
     }
 
     this.update = function () {
-        var tickTimeMul = (this.gameObject.nowLoopTime - this.gameObject.lastTickTime) / 1000;
+        var tickTimeMul = this.gameObject.tickTimeMul;
         animFrame += frameSpeed * tickTimeMul;
         var intAnimFrame = Math.floor(animFrame);
         if (animMaxFrame <= intAnimFrame)
@@ -391,7 +387,6 @@ function Bullet() {
     this.solid = true;
     this.type = "bullet";
     this.firedPos;
-    var room;
     var view;
     var ship = null;
     var speed = 500;
@@ -404,8 +399,7 @@ function Bullet() {
         this.setSprite(image, 0, 0, image.width, image.height, 95, 68, 46, 33);
         this.setSpriteFrame(0, 0);
 
-        room = this.manager.room;
-        view = room.view;
+        view = this.room.view;
     }
 
     this.getShip = function () {
@@ -416,7 +410,7 @@ function Bullet() {
     }
 
     this.update = function () {
-        var tickTimeMul = (this.gameObject.nowLoopTime - this.gameObject.lastTickTime) / 1000;
+        var tickTimeMul = this.gameObject.tickTimeMul;
         var targetMovePos = angleDistanceToPos(this.angle, speed * tickTimeMul)
         var moveDistance = getDistance(0, 0, targetMovePos.x, targetMovePos.y);
         this.x += targetMovePos.x;
@@ -450,7 +444,7 @@ function Bullet() {
         this.collidedObjects = [];
 
 
-        if (this.x < -100 || this.y < -100 || room.width + 100 < this.x || room.height + 100 < this.y ||
+        if (this.x < -100 || this.y < -100 || this.room.width + 100 < this.x || this.room.height + 100 < this.y ||
             maxRange < getDistance(this.firedPos.x, this.firedPos.y, this.x, this.y)) {
             this.destroySelf();
         }
