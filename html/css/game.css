@@ -12,7 +12,7 @@ body {
 
 #main_canvas {
     background: #808080;
-    cursor: none;
+    /* cursor: none; */
     /* cursor: url(../static/image/crosshair.png) 32 32, auto ; */
 }
 

@@ -314,6 +314,7 @@ function RoomPreset() {
     this.gameObject = null;
     this.view = null;
     this.name = "";
+    this.gravity = 0;
 
     this.init = function () { }
 
@@ -338,6 +339,9 @@ function RoomPreset() {
     this.getName = function () {
         return this.name;
     }
+    this.getGravity = function () {
+        return this.gravity;
+    }
 
     this.setWidth = function (width) {
         this.width = width;
@@ -358,6 +362,9 @@ function RoomPreset() {
     }
     this.setName = function (name) {
         this.name = name;
+    }
+    this.setGravuty = function (gravity) {
+        this.gravity = gravity;
     }
 
     this.destructor = function () { }
@@ -762,7 +769,7 @@ function InputManager(gameObject, target) {
         asynMouseStates[e.button] = 0;
     });
     window.addEventListener('mouseout', function(e){
-        if (event.toElement === null)
+        if (e.toElement === null)
             asynMouseStates = {}
     });
 }

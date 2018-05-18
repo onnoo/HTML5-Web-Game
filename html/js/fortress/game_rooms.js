@@ -14,8 +14,9 @@ var game_rooms = [
 
 
 function TestRoom() {
-    this.width = 3000;
-    this.height = 3000;
+    this.width = 1000;
+    this.height = 1000;
+    this.gravity = 2000;
 
     this.init = function () {
         var v;
@@ -32,9 +33,6 @@ function TestRoom() {
         o = newObject(Background);
         this.object_m.addObject(o);
 
-        o = newObject(Cursor);
-        this.object_m.addObject(o);
-
         o = newObject(Land);
         this.object_m.addObject(o);
 
@@ -43,6 +41,7 @@ function TestRoom() {
         o.setPos(100,100);
         o.playerControl = true;
         v.setTarget(o)
+        
         // for (var i = 0; i < 1000; i += 1) {
         //    var o = newObject(Dummy);
         //    this.object_m.addObject(o);

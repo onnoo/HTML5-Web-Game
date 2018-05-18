@@ -17,8 +17,10 @@ function Background() {
 function Land() {
     this.depth = 0;
     var height = 100;
+    var view;
 
     this.init = function () {
+        view = this.room.view;
     }
 
     this.update = function () { };
@@ -26,108 +28,83 @@ function Land() {
     this.draw = function (context) {
         var contextWidth = context.canvas.width;
         var contextHeight = context.canvas.height;
+        var contextPos = view.roomToContextPos(0, this.room.height - height);
 
-        drawRect(context, 0, contextHeight - height, contextWidth, contextHeight, null, "#000000", true);
-    };
-}
-
-function Cursor() {
-    this.depth = 1100;
-    var input_m;
-    var view;
-    var image;
-    var mouseLeftDown = 0;
-    var mouseRightDown = 0;
-
-    this.init = function () {
-        input_m = this.gameObject.input_m;
-        view = this.room.view;
-        image = this.gameObject.image_m.getImage("crosshair");
-    };
-
-    this.update = function () {
-        if (input_m.getMouseState(2) == 1) {
-            if (mouseRightDown == 0) {
-                mouseRightDown = 1;
-
-                var roomMousePos = view.viewToRoomPos(input_m.viewMousePos.x, input_m.viewMousePos.y);
-                var o = newObject(CursorClickEffect);
-                this.manager.addObject(o);
-                o.setPos(roomMousePos.x, roomMousePos.y);
-            }
-        }
-        else if (mouseRightDown == 1)
-            mouseRightDown = 0;
-    };
-
-    this.draw = function (context) {
-        var contextMousePos = view.viewToContextPos(input_m.viewMousePos.x, input_m.viewMousePos.y);
-        context.drawImage(image, contextMousePos.x - 32, contextMousePos.y - 32);
-    };
-}
-
-
-function CursorClickEffect() {
-    this.depth = 8;
-    var view;
-    var circleSize = 10;
-    var speed = 35;
-
-    this.init = function () {
-        view = this.room.view;
-    }
-
-    this.update = function () {
-        var tickTimeMul = this.gameObject.tickTimeMul;
-        circleSize -= speed * tickTimeMul;
-        if (circleSize < 0)
-            this.destroySelf();
-    };
-
-    this.draw = function (context) {
-        var contextPos = view.roomToContextPos(this.x, this.y);
-        drawCircle(context, contextPos.x, contextPos.y, circleSize, '#00FF00')
+        drawRect(context, 0, contextPos.y, contextWidth, contextHeight, null, "#000000", true);
     };
 }
 
 function Tank() {
     this.playerControl = false;
     this.depth = 10;
-    var input_m;
+    var input_m = null;
     var view;
-    var speed = 100;
-    var gravitySpeed = 10;
-    var gravityMax = 300;
-    var gravity = 0;
+    var moveSpeed = 150;
+    var moveX = 0;
+    var moveY = 0;
+    var onGround = false;
+    var width = 60;
+    var height = 50;
+    var mouseLeftDown = false;
 
     this.init = function () {
-        input_m = this.gameObject.input_m;
         view = this.room.view;
+        input_m = this.gameObject.input_m;
     }
 
     this.update = function () {
         var tickTimeMul = this.gameObject.tickTimeMul;
         if (this.playerControl) {
             if (input_m.getKeyState('a') == 1) {
-                this.x -= speed * tickTimeMul
+                moveX = -moveSpeed;
             }
             else if (input_m.getKeyState('d') == 1) {
-                
-                this.x += speed * tickTimeMul
+                moveX = moveSpeed;
             }
+            else {
+                moveX = 0;
+            }
+
+            if (input_m.getKeyState(' ') == 1) {
+                if (onGround) {
+                    moveY = -500;
+                    onGround = false;
+                }
+            }
+
+            if (input_m.getMouseState(0) == 1) {
+                if (!mouseLeftDown) {
+                    mouseLeftDown = true;
+                    var viewMousePos = input_m.getViewMousePos()
+                    var roomMousePos = view.viewToRoomPos(viewMousePos.x, viewMousePos.y);
+                    
+                    var fireAngle = getAngle(this.x, this.y - 30, roomMousePos.x, roomMousePos.y);
+                    
+
+                    o = newObject(Ball);
+                    o.setPos(this.x, this.y - 30);
+                    o.setAngle(fireAngle);
+                    this.manager.addObject(o);
+                    
+                }
+            }
+            else
+                mouseLeftDown = false;
         }
 
-        if (gravity < gravityMax)
-            gravity += gravitySpeed * tickTimeMul;
-            if (gravityMax < gravity)
-                gravity = gravityMax;
+        moveY += this.room.gravity * tickTimeMul;
+        this.x += moveX * tickTimeMul;
+        this.y += moveY * tickTimeMul;
 
-        this.y += gravity;
-
-
+        var landY = this.room.height - 100;
+        if (landY < this.y) {
+            this.y = landY;
+            moveY = 0;
+            onGround = true;
+        }
 
         if (this.room.width <= this.x)
-            this.x = room.width - 1;
+            this.x = this.room.width - 1;
         else if (this.x < 0)
             this.x = 0;
         if (this.room.height <= this.y)
@@ -137,7 +114,46 @@ function Tank() {
     };
 
     this.draw = function (context) {
-        var contextPos = view.roomToContextPos(this.x, this.y);
-        drawRect(context, contextPos.x - 30, contextPos.y - 50, 60, 50, "#000000", "#555555");
+        var contextPos1 = view.roomToContextPos(this.x - (width / 2), this.y - height);
+        var contextPos2 = view.roomToContextPos(this.x + (width / 2), this.y);
+        var drawX = contextPos1.x;
+        var drawY = contextPos1.y;
+        var drawWidth = contextPos2.x - contextPos1.x;
+        var drawHeight = contextPos2.y - contextPos1.y;
+
+        drawRect(context, drawX, drawY, drawWidth, drawHeight, "#000000", "#555555");
     };
+}
+
+function Ball() {
+    var moveSpeed = 1500;
+    var moveX = 0;
+    var moveY = 0;
+    var view;
+
+    this.init = function () {
+        view = this.room.view;
+        var movePos = angleDistanceToPos(this.angle, moveSpeed);
+        moveX = movePos.x;
+        moveY = movePos.y;
+
+    }
+
+    this.update = function () {
+        var tickTimeMul = this.gameObject.tickTimeMul;
+
+        moveY += this.room.gravity * tickTimeMul;
+        this.x += moveX * tickTimeMul;
+        this.y += moveY * tickTimeMul;
+
+        var landY = this.room.height - 100;
+        if (landY < this.y) {
+            this.destroySelf();
+        }
+    }
+
+    this.draw = function (context) {
+        var contextPos = view.roomToContextPos(this.x, this.y)
+        drawCircle(context, contextPos.x, contextPos.y, 5, null, "#FF0000");
+    }
 }
